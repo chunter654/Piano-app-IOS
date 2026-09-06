@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# Xcode build output. All of this regenerates, and none of it belongs to the
+# project: derived data lives outside the folder, but keep the patterns in case
+# a build is ever pointed here.
+build/
+DerivedData/
+
+# Per-user Xcode state: window positions, breakpoints, which file was open.
+# Noise in a diff, and meaningless on another machine.
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
+# The shared scheme is deliberately not ignored. It is what tells a fresh
+# clone how to build and test the app.

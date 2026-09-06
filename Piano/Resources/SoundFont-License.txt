@@ -1,0 +1,102 @@
+Salamander Grand Piano — the sound bank this app plays
+=====================================================
+
+Instrument : Yamaha C5 concert grand
+Created by : Alexander Holm
+SF2 build  : roberto@zenvoid.org, for the FreePats project
+Licence    : Creative Commons Attribution 3.0
+             http://creativecommons.org/licenses/by/3.0/
+
+ATTRIBUTION IS REQUIRED. CC BY 3.0 obliges anyone shipping this app to credit
+Alexander Holm. Put that credit somewhere a user can reach — an about screen,
+the App Store description, a settings note — before release.
+
+This app bundles a reduced build. The original carries sixteen velocity layers,
+and the app plays every note at one fixed velocity, so only the layer covering
+velocity 97-104 is kept, with its velocity range widened to the full 0-127.
+Nothing else was changed: the surviving sample data is byte for byte identical
+to upstream, verified across all 60 samples. 1208 MB became 77 MB.
+
+The reduction also fixed a defect. Loaded whole, the 1.2 GB original makes
+AVAudioUnitSampler drop the entire left channel on some notes — C5, A5, C6 and
+D#6 among those tested. The reduced bank plays every one of them in stereo.
+
+--------------------------------------------------------------------------
+Upstream readme follows.
+--------------------------------------------------------------------------
+
+Salamander Grand Piano (FreePats)
+---------------------------------
+
+Version v3+20200602 SF2
+
+This version of the Salamander Gran Piano sound bank in SF2 format has been
+assembled by roberto@zenvoid.org for the FreePats project. It's a simplified
+sound bank for synthesizers that require the SF2 format. Some features of the
+original are not included, and in particular: amplifier velocity tracking
+(amp_veltrack), noises of pedal, hammer and string resonance on key release.
+
+The original Salamander Grand Piano was created by Alexander Holm. Published
+under the terms of the Creative Commons Attribution 3.0 license:
+http://creativecommons.org/licenses/by/3.0/
+
+The original README is included below, please note that some information there
+may not be applicable to this derivative version.
+
+---------------------------------
+
+
+Salamander Grand Piano V2
+Yamaha C5
+
+
+Technical info
+
+Recorded @ 48khz24bit
+16 Velocity layers Sampled in minor thirds from the lowest A.
+Hammer noise releases chromatically sampled in onle one layer.
+String resonance releases in minor thirds in three layers.
+Two AKG c414 disposed in an AB position ~12cm above the strings
+
+
+Some other general info:
+This piano has been optimized and only properly tested for linuxsampler.
+If you want to optimize the .sfz yourself, values of interest are:
+-amp_veltrack (dynamics, %)
+-ampeg_release (note release decay, seconds)
+-The volume(in dB) on the pedal noise is located on the bottom of the .sfz file under //pedalAction
+[!] I suggest you make a backup of the .sfz file before you start fiddling with it :)
+In the time of writing, sfz for linuxsampler has not come out of cvs. So, it's still a bit of a pain to get this paino going.
+
+Changelog:
+
+V3+20161209
+* Fixed missing '=' in lines 449 to 464 of SalamanderGrandPianoV3Retuned.sfz.
+
+V3
+* Removed rowchange after every opcode the .sfz file should be more human readable for people who'd like to customize things.
+* Re-export A5v7-15 that had noticeable delay in beginning of file.
+* Adjusted the velocity at wich notes are triggered.
+* Increased ampeg_release to 1.000
+* Decreased amp_veltrack to 75
+* Retuned version by Markus Fiedler
+* The old V2 .sfz should work so no need to delete it if you like it :)
+* fixed a missing note
+
+V2:
+* Re-exported all notes with all lowcut filters removed and eased off some eq on some notes around C4
+* Replaced all pedal noise samples, there are now two down and two up samples.
+* Increased ampeg_veltrack on release harmonics from A0 to C2 * Increased
+ampeg_release to 0.850 * Introduced a 44.1khz16bit and an ogg vorbis version
+
+
+Licence:
+
+CC-by
+http://creativecommons.org/licenses/by/3.0/
+
+
+Author: Alexander Holm
+Feel free to mail me with any questions, if you're lucky, I might just answer them ;)
+axeldenstore (at) gmail (dot) com
+
