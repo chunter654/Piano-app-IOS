@@ -116,12 +116,44 @@ position models, converts between them when the arrangement changes, and
 persists them under `keyboard.viewportPosition`, `keyboard.layoutMode`, and
 `keyboard.startNote`.
 
+## Distributing it
+
+Builds ship through Xcode Cloud rather than from a laptop. The workflow
+archives on every push to `main` and delivers to TestFlight. It runs on Apple
+machines with a current Xcode, which is the only reason this project could be
+shipped at all from a 2019 MacBook Air: App Store Connect refuses any upload
+built against an SDK older than the current one, and that Mac cannot run an
+Xcode new enough to produce it.
+
+Distribution Preparation in the workflow must be set to **App Store Connect**,
+not TestFlight Internal Testing Only. The narrower setting produces builds that
+external testers cannot be given, whatever App Store Connect is told afterwards.
+
+## Setting up a new machine
+
+1. Install the current Xcode.
+2. Clone this repository.
+3. Sign in to Xcode under Settings, Accounts, with the Apple ID that owns team
+   `7YP7MZQN34`. It issues its own certificate; nothing is copied between
+   machines.
+4. On the phone, turn on Developer Mode under Settings, Privacy and Security.
+
+Pushing needs a key GitHub recognises. Migration Assistant carries the existing
+one across in the keychain; a clean install does not, and needs a new one
+generating and adding at github.com/settings/keys.
+
+## Verified on hardware
+
+Confirmed on an iPhone 17 running iOS 26:
+
+- **Touch-to-sound latency.** No perceptible delay between finger and note.
+
 ## Not yet verified
 
-Everything below has only ever run in the simulator, where audio timing is not
+Still only exercised in the simulator, where audio timing is not
 representative:
 
-- Touch-to-sound latency
 - Polyphony under real multi-touch
+- Sliding between keys without a note sticking
 - Playing over another app's audio on a device
 - Behaviour across calls, headphone changes, and interruptions
