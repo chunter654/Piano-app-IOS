@@ -4,8 +4,8 @@ import SwiftUI
 ///
 /// Built into the case below the slider rather than floated over the keys, so
 /// the area above the keyboard stays clear. It is meant to read as a small piece
-/// of hardware: an aged-brass plate with the current arrangement engraved into
-/// it, one bar for the single column and two for the stacked rows.
+/// of hardware: an aged-brass plate with an arrangement engraved into it, one bar
+/// for the single column and two for the stacked rows.
 struct LayoutCatch: View {
 
     let mode: KeyboardLayoutMode
@@ -25,7 +25,8 @@ struct LayoutCatch: View {
         .buttonStyle(.plain)
         .accessibilityLabel("Keyboard arrangement")
         .accessibilityValue(mode == .single ? "Single column" : "Two rows")
-        .accessibilityHint("Switches between one continuous keyboard and two stacked rows")
+        .accessibilityHint(mode == .single ? "Switches to two stacked rows"
+                                          : "Switches to one continuous keyboard")
     }
 
     private var plate: some View {
@@ -47,10 +48,13 @@ struct LayoutCatch: View {
             .shadow(color: Color(Theme.shadow).opacity(0.55), radius: 3, x: 0, y: 2)
     }
 
-    /// The arrangement currently in force, cut into the plate.
+    /// The arrangement the catch will switch to, not the one in force. The
+    /// current arrangement is already the largest thing on the screen, so
+    /// engraving it here would say nothing; engraving the destination says
+    /// what the catch does.
     @ViewBuilder
     private var engraving: some View {
-        switch mode {
+        switch mode.other {
         case .single:
             Capsule()
                 .fill(Theme.brassEdge.opacity(0.55))
