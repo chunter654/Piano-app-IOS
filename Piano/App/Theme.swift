@@ -179,6 +179,13 @@ enum Theme {
     /// outlining it too would put every edge on the rail at the same weight.
     static let controlEdge = Color(rgb(0.706, 0.612, 0.435, 0.38))
 
+    /// The catch is the one control you press rather than drag, so it stands
+    /// proud instead of sinking in. Barely: the top of its face is a shade
+    /// lighter than the keybed and the bottom a shade darker, which is enough
+    /// for the eye to read a cap without anything looking moulded.
+    static let capFaceTop = Color(rgb(0.126, 0.092, 0.064))
+    static let capFaceBottom = Color(rgb(0.072, 0.048, 0.032))
+
     // MARK: - SwiftUI
 
     static let woodLightColor = Color(woodLight)

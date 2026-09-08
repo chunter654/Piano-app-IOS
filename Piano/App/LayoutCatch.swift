@@ -9,6 +9,12 @@ import SwiftUI
 struct LayoutCatch: View {
 
     let mode: KeyboardLayoutMode
+
+    /// Set by whoever places it, because the two arrangements give it
+    /// different room. Letting it grow to fill instead cost the stacked bar
+    /// its symmetry: it swallowed the slack the arrows were centred on and
+    /// dragged the whole group seventeen points off centre.
+    let width: CGFloat
     let action: () -> Void
 
     private static let plateWidth: CGFloat = 30
@@ -18,10 +24,9 @@ struct LayoutCatch: View {
         Button(action: action) {
             plate
                 .frame(width: Self.plateWidth, height: Self.plateHeight)
-                // Fills the control column rather than claiming a fixed width,
-                // so narrowing that column narrows the target with it instead
-                // of leaving it hanging over the keys.
-                .frame(maxWidth: .infinity, minHeight: 48)
+                // Exactly the width it is given, so the target never hangs over
+                // the keys and never steals room from anything beside it.
+                .frame(width: width, height: 48)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -29,25 +34,33 @@ struct LayoutCatch: View {
         .accessibilityValue(mode == .single ? "Single column" : "Two rows")
         .accessibilityHint(mode == .single ? "Switches to two stacked rows"
                                           : "Switches to one continuous keyboard")
-    }
-    /// A hollow cut into the rail, not a plate sitting on it. The brass is now
-    /// only in the marks, which is what stops the control competing with the
-    /// keyboard it sits above.
+    }    /// A cap that sits proud of the rail, not a hollow cut into it. This is the
+    /// only control here you press rather than drag, and it should look like
+    /// something that goes down when you do.
+    ///
+    /// The bevel does the work rather than an outline: light along the top lip,
+    /// dark along the bottom, which is how a machined cap catches light. A
+    /// stroke of even weight all the way round is what makes a shape read as a
+    /// rectangle drawn on a screen.
     private var plate: some View {
         RoundedRectangle(cornerRadius: 7, style: .continuous)
-            .fill(Theme.controlRecess)
+            .fill(
+                LinearGradient(colors: [Theme.capFaceTop, Theme.capFaceBottom],
+                               startPoint: .top, endPoint: .bottom)
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .strokeBorder(Theme.controlEdge, lineWidth: 0.5)
+                    .strokeBorder(
+                        LinearGradient(colors: [Theme.controlEdge,
+                                                Theme.brassEdge.opacity(0.55)],
+                                       startPoint: .top, endPoint: .bottom),
+                        lineWidth: 0.75
+                    )
             )
+            .shadow(color: Color(Theme.shadow).opacity(0.5), radius: 2, x: 0, y: 1.5)
             .overlay(engraving)
     }
 
-    /// The arrangement the catch will switch to, not the one in force. The
-    /// current arrangement is already the largest thing on the screen, so
-    /// engraving it here would say nothing; engraving the destination says
-    /// what the catch does.
-    ///
     /// Two lines for the two rows, one for the single column, which makes the
     /// mark count the thing it stands for. They are hairlines rather than
     /// bars: at this size a bar reads as a symbol borrowed from some other

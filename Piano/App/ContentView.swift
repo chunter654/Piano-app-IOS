@@ -107,7 +107,9 @@ struct ContentView: View {
             keyboard
 
             VStack(spacing: 10) {
-                LayoutCatch(mode: range.mode) { range.toggleMode() }
+                LayoutCatch(mode: range.mode, width: Self.controlColumnWidth) {
+                    range.toggleMode()
+                }
                 RangeSlider(range: range)
             }
             .frame(width: Self.controlColumnWidth)

@@ -22,7 +22,7 @@ struct RangeSlider: View {
     @State private var zoomAtPinchStart: Double?
 
     private static let trackWidth: CGFloat = 5
-    private static let thumbWidth: CGFloat = 15
+    private static let thumbWidth: CGFloat = 13
     private static let minimumThumbHeight: CGFloat = 34
     /// How far past the thumb still counts as grabbing it.
     private static let grabSlack: CGFloat = 10
@@ -149,6 +149,10 @@ struct RangeStepBar: View {
     /// the bar, a long way from the lettering they act on.
     private static let centreChannel: CGFloat = 105
 
+    /// The catch, and the empty space reserved opposite it. One constant for
+    /// both, because the pair being equal is what centres the range.
+    private static let catchWidth: CGFloat = 44
+
     /// What the range has to fit within: the channel plus the stack's spacing
     /// on either side of it.
     private static var rangeWidth: CGFloat { centreChannel + controlSpacing * 2 }
@@ -182,7 +186,7 @@ struct RangeStepBar: View {
             HStack(spacing: Self.controlSpacing) {
                 // Reserves the catch's width on the left, so the pair of arrows
                 // centres on the same line the range does.
-                Color.clear.frame(width: 44, height: 1)
+                Color.clear.frame(width: Self.catchWidth, height: 1)
                 Spacer(minLength: 0)
 
                 StepButton(pointsLeft: true,
@@ -198,7 +202,8 @@ struct RangeStepBar: View {
                 }
 
                 Spacer(minLength: 0)
-                LayoutCatch(mode: range.mode, action: onToggleArrangement)
+                LayoutCatch(mode: range.mode, width: Self.catchWidth,
+                            action: onToggleArrangement)
             }
         }
     }
@@ -229,9 +234,9 @@ private struct Chevron: Shape {
     }
 }
 
-/// The recess every control on the rail sits in: a hollow cut into the case,
-/// with a hairline where its lip catches the light. Deliberately quiet, so the
-/// brass inside it is the only thing that reads as hardware.
+/// The hollow the arrows sit in: a shadow cut into the case, with no edge at
+/// all. An outline would draw the eye to the container rather than the mark,
+/// and the chevron is the part worth looking at.
 private struct ControlRecess: View {
 
     var cornerRadius: CGFloat = 10
@@ -240,11 +245,6 @@ private struct ControlRecess: View {
     var body: some View {
         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
             .fill(Theme.controlRecess.opacity(isEnabled ? 1 : 0.55))
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(Theme.controlEdge.opacity(isEnabled ? 1 : 0.35),
-                                  lineWidth: 0.5)
-            )
     }
 }
 
