@@ -17,6 +17,15 @@ final class PianoKeyboardView: UIView {
 
     /// Where the viewport sits on the piano, in white keys from A0. Fractional
     /// values are expected: this is what the slider drives.
+    /// How much of the piano is on screen. Changing it resizes every key, so
+    /// unlike a scroll it is a full relayout.
+    var visibleWhiteKeys: Double = KeyboardRangeController.defaultVisibleWhiteKeys {
+        didSet {
+            guard visibleWhiteKeys != oldValue else { return }
+            setNeedsLayout()
+        }
+    }
+
     var position: Double = KeyboardRangeController.defaultPosition {
         didSet {
             guard position != oldValue else { return }
@@ -120,7 +129,7 @@ final class PianoKeyboardView: UIView {
         switch mode {
         case .single:
             return KeyboardLayout.frames(position: position,
-                                         visibleWhiteKeys: KeyboardRangeController.visibleWhiteKeys,
+                                         visibleWhiteKeys: visibleWhiteKeys,
                                          in: bounds)
         case .twoRow:
             return KeyboardLayout.twoRowFrames(startNote: startNote, in: bounds)
@@ -255,7 +264,7 @@ final class PianoKeyboardView: UIView {
             accessibilityValue = "\(low.spokenName) to \(high.spokenName)"
             return
         }
-        let visible = KeyboardRangeController.visibleWhiteKeys
+        let visible = visibleWhiteKeys
         let first = min(max(Int(position.rounded(.down)), 0), KeyboardLayout.whiteMidis.count - 1)
         let last = min(max(Int((position + visible).rounded(.up)) - 1, 0),
                        KeyboardLayout.whiteMidis.count - 1)

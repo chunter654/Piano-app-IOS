@@ -3,6 +3,11 @@ import XCTest
 
 final class KeyboardRangeControllerTests: XCTestCase {
 
+    /// The travel at the default zoom, which is what these tests assume.
+    private var maxPosition: Double {
+        KeyboardRangeController.maxPosition(showing: KeyboardRangeController.defaultVisibleWhiteKeys)
+    }
+
     /// Each test gets its own storage, so nothing leaks between them or into the
     /// real app's saved position.
     private var suiteName = ""
@@ -55,7 +60,7 @@ final class KeyboardRangeControllerTests: XCTestCase {
 
     func testASavedPositionBeyondThePianoIsClamped() {
         defaults.set(9_999.0, forKey: "keyboard.viewportPosition")
-        XCTAssertEqual(makeController().position, KeyboardRangeController.maxPosition, accuracy: 0.0001)
+        XCTAssertEqual(makeController().position, maxPosition, accuracy: 0.0001)
 
         defaults.set(-9_999.0, forKey: "keyboard.viewportPosition")
         XCTAssertEqual(makeController().position, 0, accuracy: 0.0001)
@@ -101,7 +106,7 @@ final class KeyboardRangeControllerTests: XCTestCase {
         XCTAssertEqual(range.visibleNotes.low.name, "A0")
 
         range.setPosition(500)
-        XCTAssertEqual(range.position, KeyboardRangeController.maxPosition, accuracy: 0.0001)
+        XCTAssertEqual(range.position, maxPosition, accuracy: 0.0001)
         XCTAssertFalse(range.canMoveUp)
         XCTAssertEqual(range.visibleNotes.high.name, "C8")
     }
@@ -110,7 +115,7 @@ final class KeyboardRangeControllerTests: XCTestCase {
         let range = makeController()
         range.setPosition(0)
         XCTAssertEqual(range.progress, 0, accuracy: 0.0001)
-        range.setPosition(KeyboardRangeController.maxPosition)
+        range.setPosition(maxPosition)
         XCTAssertEqual(range.progress, 1, accuracy: 0.0001)
     }
 
@@ -127,17 +132,98 @@ final class KeyboardRangeControllerTests: XCTestCase {
         let range = makeController()
         range.setPosition(0)
         XCTAssertFalse(range.step(by: -1))
-        range.setPosition(KeyboardRangeController.maxPosition)
+        range.setPosition(maxPosition)
         XCTAssertFalse(range.step(by: 1))
     }
 
     func testNoReachablePositionLeavesThePiano() {
         let range = makeController()
-        for tenth in 0...Int(KeyboardRangeController.maxPosition * 10) {
+        for tenth in 0...Int(maxPosition * 10) {
             range.setPosition(Double(tenth) / 10)
             let notes = range.visibleNotes
             XCTAssertGreaterThanOrEqual(notes.low.midi, PianoNote.lowest.midi)
             XCTAssertLessThanOrEqual(notes.high.midi, PianoNote.highest.midi)
         }
+    }
+}
+
+// MARK: - Zoom
+
+extension KeyboardRangeControllerTests {
+
+    func testZoomIsHeldWithinItsLimits() {
+        let range = makeController()
+
+        range.setVisibleWhiteKeys(1)
+        XCTAssertEqual(range.visibleWhiteKeys,
+                       KeyboardRangeController.minVisibleWhiteKeys, accuracy: 0.0001)
+
+        range.setVisibleWhiteKeys(1_000)
+        XCTAssertEqual(range.visibleWhiteKeys,
+                       KeyboardRangeController.maxVisibleWhiteKeys, accuracy: 0.0001)
+    }
+
+    func testNonsenseZoomIsRejectedRatherThanStored() {
+        let range = makeController()
+        let before = range.visibleWhiteKeys
+        XCTAssertFalse(range.setVisibleWhiteKeys(.nan))
+        XCTAssertEqual(range.visibleWhiteKeys, before, accuracy: 0.0001)
+    }
+
+    /// The keys under your hand should stay roughly where they were, which is
+    /// what makes zooming feel like changing size rather than moving house.
+    func testZoomingHoldsTheMiddleOfTheViewStill() {
+        let range = makeController()
+        range.setPosition(20)
+        let centreBefore = range.position + range.visibleWhiteKeys / 2
+
+        range.setVisibleWhiteKeys(10)
+        XCTAssertEqual(range.position + range.visibleWhiteKeys / 2, centreBefore, accuracy: 0.0001)
+
+        range.setVisibleWhiteKeys(24)
+        XCTAssertEqual(range.position + range.visibleWhiteKeys / 2, centreBefore, accuracy: 0.0001)
+    }
+
+    /// Widening the view at the bottom of the piano leaves less room to scroll,
+    /// so the position has to come back rather than hang off the end.
+    func testZoomingOutAtTheEndPullsTheViewBackOntoThePiano() {
+        let range = makeController()
+        range.setPosition(range.maxPosition)
+        XCTAssertEqual(range.position, range.maxPosition, accuracy: 0.0001)
+
+        range.setVisibleWhiteKeys(KeyboardRangeController.maxVisibleWhiteKeys)
+        XCTAssertLessThanOrEqual(range.position, range.maxPosition + 0.0001)
+        XCTAssertGreaterThanOrEqual(range.position, -0.0001)
+    }
+
+    func testTheWholePianoIsReachableAtEveryZoom() {
+        for keys in stride(from: KeyboardRangeController.minVisibleWhiteKeys,
+                           through: KeyboardRangeController.maxVisibleWhiteKeys, by: 1) {
+            let range = makeController()
+            range.setVisibleWhiteKeys(keys)
+
+            range.setPosition(0)
+            XCTAssertEqual(range.visibleNotes.low.name, "A0", "at \(keys) keys")
+
+            range.setPosition(range.maxPosition)
+            XCTAssertEqual(range.visibleNotes.high.name, "C8", "at \(keys) keys")
+        }
+    }
+
+    func testZoomIsRememberedAcrossLaunches() {
+        let first = makeController()
+        first.setVisibleWhiteKeys(22)
+
+        let second = makeController()
+        XCTAssertEqual(second.visibleWhiteKeys, 22, accuracy: 0.0001)
+    }
+
+    /// A stored value from some future version with different limits must not
+    /// strand the keyboard at a zoom this one cannot reach.
+    func testAnOutOfRangeStoredZoomIsBroughtBackInside() {
+        defaults.set(500.0, forKey: "keyboard.visibleWhiteKeys")
+        let range = makeController()
+        XCTAssertEqual(range.visibleWhiteKeys,
+                       KeyboardRangeController.maxVisibleWhiteKeys, accuracy: 0.0001)
     }
 }

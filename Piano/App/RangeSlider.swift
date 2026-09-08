@@ -17,17 +17,20 @@ struct RangeSlider: View {
     /// Whether the current drag has been judged yet. A drag is accepted or
     /// rejected once, when it starts, not continuously as it moves.
     @State private var isJudged = false
+    /// The zoom when the pinch began, so the gesture scales from where it
+    /// started rather than compounding on every callback.
+    @State private var zoomAtPinchStart: Double?
 
     private static let trackWidth: CGFloat = 9
     private static let thumbWidth: CGFloat = 27
-    private static let minimumThumbHeight: CGFloat = 52
+    private static let minimumThumbHeight: CGFloat = 34
     /// How far past the thumb still counts as grabbing it.
     private static let grabSlack: CGFloat = 10
 
     var body: some View {
         GeometryReader { geo in
             let height = geo.size.height
-            let visibleFraction = KeyboardRangeController.visibleWhiteKeys
+            let visibleFraction = range.visibleWhiteKeys
                 / Double(KeyboardRangeController.whiteKeyCount)
             let thumbHeight = max(Self.minimumThumbHeight, height * CGFloat(visibleFraction))
             let travel = max(1, height - thumbHeight)
@@ -61,6 +64,22 @@ struct RangeSlider: View {
                         grabbedFrom = nil
                     }
             )
+            // Pinching the bar zooms the keyboard. It lives here rather than on
+            // the keys because the keyboard tracks every finger separately to
+            // make chords and sliding work, and a pinch there would be read as
+            // two notes.
+            .simultaneousGesture(
+                MagnifyGesture()
+                    .onChanged { value in
+                        let base = zoomAtPinchStart ?? range.visibleWhiteKeys
+                        zoomAtPinchStart = base
+                        // Spreading the fingers magnifies, which means fewer
+                        // keys on screen, so the count divides rather than
+                        // multiplies.
+                        range.setVisibleWhiteKeys(base / Double(value.magnification))
+                    }
+                    .onEnded { _ in zoomAtPinchStart = nil }
+            )
         }
         .accessibilityElement()
         .accessibilityLabel("Keyboard range")
@@ -81,7 +100,7 @@ struct RangeSlider: View {
     private func scroll(to proposedTop: CGFloat, travel: CGFloat) {
         let top = min(max(proposedTop, 0), travel)
         let fraction = travel > 0 ? Double(top / travel) : 0
-        range.setPosition(fraction * KeyboardRangeController.maxPosition)
+        range.setPosition(fraction * range.maxPosition)
     }
 
     // MARK: - Hardware

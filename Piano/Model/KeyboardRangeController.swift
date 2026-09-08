@@ -12,8 +12,14 @@ final class KeyboardRangeController: ObservableObject {
     /// White keys on an 88-key piano, A0 through C8.
     static let whiteKeyCount = 52
 
-    /// How many white keys the single column shows: the span of C3 to C5.
-    static let visibleWhiteKeys: Double = 15
+    /// How many white keys the single column shows. Not a constant: pinching
+    /// the range bar zooms the keyboard, and this is what changes.
+    static let defaultVisibleWhiteKeys: Double = 15   // the span of C3 to C5
+
+    /// Closer in than this and barely an octave is reachable; wider out and the
+    /// keys are narrower than a fingertip and stop being playable.
+    static let minVisibleWhiteKeys: Double = 8
+    static let maxVisibleWhiteKeys: Double = 32
 
     /// Semitones the stacked arrangement shows: two whole octaves.
     static let stackedSpan = KeyboardLayout.semitonesPerOctave * 2
@@ -36,8 +42,13 @@ final class KeyboardRangeController: ObservableObject {
     }
 
     /// Position 0 puts A0 at the top; this is as far down the piano as the
-    /// single column can travel before C8 reaches the bottom.
-    static let maxPosition = Double(whiteKeyCount) - visibleWhiteKeys
+    /// single column can travel before C8 reaches the bottom. It shrinks as the
+    /// keyboard zooms out, because more keys on screen leaves less to scroll.
+    static func maxPosition(showing visibleWhiteKeys: Double) -> Double {
+        Double(whiteKeyCount) - visibleWhiteKeys
+    }
+
+    var maxPosition: Double { Self.maxPosition(showing: visibleWhiteKeys) }
 
     /// C3 is the seventeenth white key, counting A0 as the first, so a fresh
     /// install opens on C3 to C5.
@@ -48,8 +59,14 @@ final class KeyboardRangeController: ObservableObject {
     private static let storageKey = "keyboard.viewportPosition"
     private static let modeKey = "keyboard.layoutMode"
     private static let startNoteKey = "keyboard.startNote"
+    private static let zoomKey = "keyboard.visibleWhiteKeys"
 
     @Published private(set) var position: Double
+
+    /// How much of the piano is on screen. Drives both the key sizes and
+    /// the size of the slider thumb, which is why the thumb shrinks as you
+    /// zoom in: it is a true measure of the fraction in view.
+    @Published private(set) var visibleWhiteKeys: Double
 
     /// Which arrangement the keyboard is in. Remembered along with the position.
     @Published private(set) var mode: KeyboardLayoutMode
@@ -73,10 +90,22 @@ final class KeyboardRangeController: ObservableObject {
         // object has to be read instead. A stored value is still clamped: the
         // reachable range depends on constants that could change in a later
         // version, and a rogue value must not strand the keyboard off the piano.
-        if let saved = defaults.object(forKey: Self.storageKey) as? Double, saved.isFinite {
-            position = min(max(saved, 0), Self.maxPosition)
+        // Held locally for the same reason as the mode above: a stored property
+        // cannot be read back until every one of them has a value, and the
+        // travel below is derived from this one.
+        let resolvedZoom: Double
+        if let savedZoom = defaults.object(forKey: Self.zoomKey) as? Double, savedZoom.isFinite {
+            resolvedZoom = min(max(savedZoom, Self.minVisibleWhiteKeys),
+                               Self.maxVisibleWhiteKeys)
         } else {
-            position = min(Self.defaultPosition, Self.maxPosition)
+            resolvedZoom = Self.defaultVisibleWhiteKeys
+        }
+        visibleWhiteKeys = resolvedZoom
+        let travel = Self.maxPosition(showing: resolvedZoom)
+        if let saved = defaults.object(forKey: Self.storageKey) as? Double, saved.isFinite {
+            position = min(max(saved, 0), travel)
+        } else {
+            position = min(Self.defaultPosition, travel)
         }
 
         if let savedStart = defaults.object(forKey: Self.startNoteKey) as? Int {
@@ -145,14 +174,14 @@ final class KeyboardRangeController: ObservableObject {
 
     /// How far along the piano the viewport is, 0 to 1. Drives the slider.
     var progress: Double {
-        guard Self.maxPosition > 0 else { return 0 }
-        return position / Self.maxPosition
+        guard maxPosition > 0 else { return 0 }
+        return position / maxPosition
     }
 
     /// The lowest and highest notes currently on screen, rounded to whole keys.
     var visibleNotes: (low: PianoNote, high: PianoNote) {
         let first = Int(position.rounded(.down))
-        let last = Int((position + Self.visibleWhiteKeys).rounded(.up)) - 1
+        let last = Int((position + visibleWhiteKeys).rounded(.up)) - 1
         let lowIndex = min(max(first, 0), Self.whiteKeyCount - 1)
         let highIndex = min(max(last, 0), Self.whiteKeyCount - 1)
         return (PianoNote(midi: KeyboardLayout.whiteMidis[lowIndex]),
@@ -166,7 +195,7 @@ final class KeyboardRangeController: ObservableObject {
     }
 
     var canMoveDown: Bool { position > 0 }
-    var canMoveUp: Bool { position < Self.maxPosition }
+    var canMoveUp: Bool { position < maxPosition }
 
     /// Moves the viewport, clamped to the piano, and remembers where it landed.
     /// Returns whether it moved.
@@ -174,10 +203,29 @@ final class KeyboardRangeController: ObservableObject {
     func setPosition(_ value: Double) -> Bool {
         // Clamping a NaN is not meaningful, so reject it before comparing.
         guard value.isFinite else { return false }
-        let clamped = min(max(value, 0), Self.maxPosition)
+        let clamped = min(max(value, 0), maxPosition)
         guard abs(clamped - position) > 1e-9 else { return false }
         position = clamped
         defaults.set(clamped, forKey: Self.storageKey)
+        return true
+    }
+
+    /// Changes how much of the piano is on screen, holding the middle of the
+    /// view still. Zooming about the centre keeps the keys under your hand
+    /// where they were; anchoring anywhere else slides the instrument sideways
+    /// while you are only trying to change its size.
+    @discardableResult
+    func setVisibleWhiteKeys(_ value: Double) -> Bool {
+        guard value.isFinite else { return false }
+        let clamped = min(max(value, Self.minVisibleWhiteKeys), Self.maxVisibleWhiteKeys)
+        guard abs(clamped - visibleWhiteKeys) > 1e-9 else { return false }
+
+        let centre = position + visibleWhiteKeys / 2
+        visibleWhiteKeys = clamped
+        defaults.set(clamped, forKey: Self.zoomKey)
+        // The travel has changed underneath the position, so this both recentres
+        // and pulls it back inside the piano.
+        setPosition(centre - clamped / 2)
         return true
     }
 

@@ -9,6 +9,7 @@ struct PianoKeyboard: UIViewRepresentable {
 
     /// Where the viewport sits on the piano, in white keys from A0.
     let position: Double
+    let visibleWhiteKeys: Double
     let startNote: Int
     let mode: KeyboardLayoutMode
     let onPress: (PianoNote) -> Void
@@ -24,6 +25,7 @@ struct PianoKeyboard: UIViewRepresentable {
         view.mode = mode
         view.startNote = startNote
         view.position = position
+        view.visibleWhiteKeys = visibleWhiteKeys
         return view
     }
 
@@ -32,6 +34,7 @@ struct PianoKeyboard: UIViewRepresentable {
         view.mode = mode
         view.startNote = startNote
         view.position = position
+        view.visibleWhiteKeys = visibleWhiteKeys
     }
 
     final class Coordinator: PianoKeyboardViewDelegate {

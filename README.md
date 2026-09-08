@@ -20,7 +20,14 @@ from the right. The note names turn with it, so tilting the phone reads them
 upright. A brass slider down the right scrolls a viewport across the whole
 88-key piano. The viewport moves continuously rather than in steps, which is
 what makes the travel feel smooth; the keys themselves never move relative to
-one another.
+one another. Pinching that same slider zooms, between eight and thirty-two
+white keys on screen, holding the middle of the view still. The thumb is sized
+from the fraction of the piano in view, so it shrinks as you zoom in and is a
+true measure rather than a decorative handle.
+
+The pinch lives on the slider rather than on the keys because the keyboard
+tracks every finger separately to make chords and sliding work, and a pinch
+there would be read as two notes.
 
 **Stacked.** Two rows of a conventional keyboard, one octave each, with the
 lower octave on top. The chevrons either side of the range move a whole octave
@@ -82,8 +89,8 @@ xcodebuild -project Piano.xcodeproj -scheme Piano \
   -destination 'platform=iOS Simulator,name=iPhone 16 Pro' test
 ```
 
-There are 33 of them, covering the layout maths, the range controller, and note
-naming. They are pure model tests with no UI, so they are quick.
+There are 40 of them, covering the layout maths, the range controller, the zoom
+limits, and note naming. They are pure model tests with no UI, so they are quick.
 
 ### Running on a real iPhone
 

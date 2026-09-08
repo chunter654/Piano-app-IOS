@@ -6,7 +6,11 @@ final class KeyboardLayoutTests: XCTestCase {
 
     /// A portrait keyboard area: narrow and tall.
     private let bounds = CGRect(x: 0, y: 0, width: 370, height: 680)
-    private let visible = KeyboardRangeController.visibleWhiteKeys
+    private let visible = KeyboardRangeController.defaultVisibleWhiteKeys
+    /// The travel at the default zoom, which is what these tests exercise.
+    private var maxPosition: Double {
+        KeyboardRangeController.maxPosition(showing: visible)
+    }
 
     private func frames(at position: Double) -> [KeyFrame] {
         KeyboardLayout.frames(position: position, visibleWhiteKeys: visible, in: bounds)
@@ -54,7 +58,7 @@ final class KeyboardLayoutTests: XCTestCase {
 
     func testKeySizesDoNotDependOnPosition() {
         let thickness = bounds.height / CGFloat(visible)
-        for position in stride(from: 0.0, through: KeyboardRangeController.maxPosition, by: 0.5) {
+        for position in stride(from: 0.0, through: maxPosition, by: 0.5) {
             for frame in frames(at: position) {
                 if frame.isBlack {
                     XCTAssertEqual(frame.frame.height,
@@ -133,13 +137,13 @@ final class KeyboardLayoutTests: XCTestCase {
         let lowest = frames(at: 0).first { $0.note.midi == PianoNote.lowest.midi }!
         XCTAssertEqual(lowest.frame.minY, bounds.minY, accuracy: 0.001, "A0 at the top of the travel")
 
-        let highest = frames(at: KeyboardRangeController.maxPosition)
+        let highest = frames(at: maxPosition)
             .first { $0.note.midi == PianoNote.highest.midi }!
         XCTAssertEqual(highest.frame.maxY, bounds.maxY, accuracy: 0.001, "C8 at the bottom of the travel")
     }
 
     func testAboutTwoOctavesStayVisibleWhereverTheViewportIs() {
-        for position in stride(from: 0.0, through: KeyboardRangeController.maxPosition, by: 0.25) {
+        for position in stride(from: 0.0, through: maxPosition, by: 0.25) {
             let onScreen = frames(at: position).filter {
                 $0.frame.maxY > bounds.minY && $0.frame.minY < bounds.maxY
             }

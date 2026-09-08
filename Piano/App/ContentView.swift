@@ -112,6 +112,7 @@ struct ContentView: View {
     private var keyboard: some View {
         PianoKeyboard(
             position: range.position,
+            visibleWhiteKeys: range.visibleWhiteKeys,
             startNote: range.startNote,
             mode: range.mode,
             onPress: { audio.noteOn($0.midi) },
