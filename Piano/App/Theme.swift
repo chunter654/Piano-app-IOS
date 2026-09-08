@@ -174,6 +174,11 @@ enum Theme {
     /// Barely there: the light along the lip of a routed edge, not an outline.
     static let controlRim = Color(rgb(0.400, 0.310, 0.212, 0.22))
 
+    /// Brass, thin, and only on the things you press. The groove the slider
+    /// runs in keeps the fainter rim above: it is a channel, not a control, and
+    /// outlining it too would put every edge on the rail at the same weight.
+    static let controlEdge = Color(rgb(0.706, 0.612, 0.435, 0.38))
+
     // MARK: - SwiftUI
 
     static let woodLightColor = Color(woodLight)

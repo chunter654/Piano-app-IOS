@@ -22,7 +22,7 @@ struct RangeSlider: View {
     @State private var zoomAtPinchStart: Double?
 
     private static let trackWidth: CGFloat = 5
-    private static let thumbWidth: CGFloat = 11
+    private static let thumbWidth: CGFloat = 15
     private static let minimumThumbHeight: CGFloat = 34
     /// How far past the thumb still counts as grabbing it.
     private static let grabSlack: CGFloat = 10
@@ -242,7 +242,7 @@ private struct ControlRecess: View {
             .fill(Theme.controlRecess.opacity(isEnabled ? 1 : 0.55))
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(Theme.controlRim.opacity(isEnabled ? 1 : 0.4),
+                    .strokeBorder(Theme.controlEdge.opacity(isEnabled ? 1 : 0.35),
                                   lineWidth: 0.5)
             )
     }

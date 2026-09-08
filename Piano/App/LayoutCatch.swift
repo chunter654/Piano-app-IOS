@@ -36,7 +36,7 @@ struct LayoutCatch: View {
             .fill(Theme.controlRecess)
             .overlay(
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .strokeBorder(Theme.controlRim, lineWidth: 0.5)
+                    .strokeBorder(Theme.controlEdge, lineWidth: 0.5)
             )
             .overlay(engraving)
     }
@@ -46,9 +46,10 @@ struct LayoutCatch: View {
     /// engraving it here would say nothing; engraving the destination says
     /// what the catch does.
     ///
-    /// Both marks are hairlines rather than bars. At this size a bar reads as
-    /// a symbol borrowed from some other app, which is exactly what the rest
-    /// of this rail is trying not to look like.
+    /// Two lines for the two rows, one for the single column, which makes the
+    /// mark count the thing it stands for. They are hairlines rather than
+    /// bars: at this size a bar reads as a symbol borrowed from some other
+    /// app, which is what the rest of this rail is trying not to look like.
     @ViewBuilder
     private var engraving: some View {
         switch mode.other {
@@ -57,8 +58,8 @@ struct LayoutCatch: View {
                 .fill(Theme.brassTextColor.opacity(0.8))
                 .frame(width: 1.5, height: 18)
         case .twoRow:
-            VStack(spacing: 4.5) {
-                ForEach(0..<3, id: \.self) { _ in
+            VStack(spacing: 6) {
+                ForEach(0..<2, id: \.self) { _ in
                     Capsule()
                         .fill(Theme.brassTextColor.opacity(0.8))
                         .frame(width: 16, height: 1.5)
