@@ -11,9 +11,18 @@ struct RangeSlider: View {
 
     @ObservedObject var range: KeyboardRangeController
 
+    /// Where the thumb sat when the finger landed on it, or nil when the
+    /// drag began somewhere else and is being ignored.
+    @State private var grabbedFrom: CGFloat?
+    /// Whether the current drag has been judged yet. A drag is accepted or
+    /// rejected once, when it starts, not continuously as it moves.
+    @State private var isJudged = false
+
     private static let trackWidth: CGFloat = 9
     private static let thumbWidth: CGFloat = 27
     private static let minimumThumbHeight: CGFloat = 52
+    /// How far past the thumb still counts as grabbing it.
+    private static let grabSlack: CGFloat = 10
 
     var body: some View {
         GeometryReader { geo in
@@ -30,12 +39,26 @@ struct RangeSlider: View {
                     .offset(y: CGFloat(range.progress) * travel)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            // The whole column is draggable, not just the thumb itself.
+            // Touches that miss the thumb are ignored. Pressing the track used
+            // to fling the keyboard to wherever the finger happened to land,
+            // which is easy to do by accident and hard to undo.
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
-                        scroll(toCentre: value.location.y, travel: travel, thumbHeight: thumbHeight)
+                        if !isJudged {
+                            isJudged = true
+                            let thumbTop = CGFloat(range.progress) * travel
+                            let reach = (thumbTop - Self.grabSlack)
+                                ... (thumbTop + thumbHeight + Self.grabSlack)
+                            grabbedFrom = reach.contains(value.startLocation.y) ? thumbTop : nil
+                        }
+                        guard let origin = grabbedFrom else { return }
+                        scroll(to: origin + value.translation.height, travel: travel)
+                    }
+                    .onEnded { _ in
+                        isJudged = false
+                        grabbedFrom = nil
                     }
             )
         }
@@ -52,10 +75,11 @@ struct RangeSlider: View {
         }
     }
 
-    /// Maps the finger straight onto the thumb's centre, so the keyboard tracks
-    /// the drag continuously with no quantisation anywhere in the path.
-    private func scroll(toCentre y: CGFloat, travel: CGFloat, thumbHeight: CGFloat) {
-        let top = min(max(y - thumbHeight / 2, 0), travel)
+    /// Moves the thumb by however far the finger has travelled since it landed,
+    /// rather than centring it on the finger. That keeps the thumb under the
+    /// part of it you actually grabbed, and nothing quantises the movement.
+    private func scroll(to proposedTop: CGFloat, travel: CGFloat) {
+        let top = min(max(proposedTop, 0), travel)
         let fraction = travel > 0 ? Double(top / travel) : 0
         range.setPosition(fraction * KeyboardRangeController.maxPosition)
     }
