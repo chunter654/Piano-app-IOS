@@ -119,11 +119,15 @@ enum Theme {
         rgb(0.067, 0.043, 0.028).cgColor,
     ]
 
+    /// Lifted further off the resting colour than the naturals are, because a
+    /// dark key against a dark keybed shows a change far less readily than an
+    /// ivory one does. The same warmth throughout: a grey flash would read as
+    /// the key being lit rather than struck.
     static let blackKeyPressed = [
-        rgb(0.341, 0.263, 0.200).cgColor,
-        rgb(0.286, 0.212, 0.157).cgColor,
-        rgb(0.212, 0.153, 0.110).cgColor,
-        rgb(0.137, 0.094, 0.063).cgColor,
+        rgb(0.412, 0.313, 0.240).cgColor,
+        rgb(0.333, 0.247, 0.180).cgColor,
+        rgb(0.219, 0.153, 0.107).cgColor,
+        rgb(0.114, 0.073, 0.048).cgColor,
     ]
 
     /// Where the gradient stops sit along a key, front to back. The first pair
