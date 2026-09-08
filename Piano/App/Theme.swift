@@ -164,6 +164,16 @@ enum Theme {
     static let trackBottom = Color(rgb(0.157, 0.110, 0.078))
     static let trackRim = Color(rgb(0.400, 0.310, 0.212, 0.55))
 
+    // MARK: - Recessed controls
+
+    /// The controls are cut into the rail rather than sitting on it. Darker
+    /// than the keybed around them, so the eye reads a hollow rather than a
+    /// button, and the brass mark inside is the only thing that carries weight.
+    static let controlRecess = Color(rgb(0.055, 0.035, 0.022))
+
+    /// Barely there: the light along the lip of a routed edge, not an outline.
+    static let controlRim = Color(rgb(0.400, 0.310, 0.212, 0.22))
+
     // MARK: - SwiftUI
 
     static let woodLightColor = Color(woodLight)

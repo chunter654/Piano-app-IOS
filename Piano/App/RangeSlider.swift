@@ -21,8 +21,8 @@ struct RangeSlider: View {
     /// started rather than compounding on every callback.
     @State private var zoomAtPinchStart: Double?
 
-    private static let trackWidth: CGFloat = 9
-    private static let thumbWidth: CGFloat = 27
+    private static let trackWidth: CGFloat = 5
+    private static let thumbWidth: CGFloat = 11
     private static let minimumThumbHeight: CGFloat = 34
     /// How far past the thumb still counts as grabbing it.
     private static let grabSlack: CGFloat = 10
@@ -104,50 +104,33 @@ struct RangeSlider: View {
     }
 
     // MARK: - Hardware
-
+    /// A groove routed into the case. Darker than anything around it, with the
+    /// faintest lip, so the thumb is the only part of the control with weight.
     private var track: some View {
-        RoundedRectangle(cornerRadius: Self.trackWidth / 2, style: .continuous)
-            .fill(
-                LinearGradient(colors: [Theme.trackTop, Theme.trackBottom],
-                               startPoint: .leading, endPoint: .trailing)
-            )
+        Capsule(style: .continuous)
+            .fill(Theme.controlRecess)
             .overlay(
-                RoundedRectangle(cornerRadius: Self.trackWidth / 2, style: .continuous)
-                    .strokeBorder(Theme.trackRim, lineWidth: 0.5)
+                Capsule(style: .continuous)
+                    .strokeBorder(Theme.controlRim, lineWidth: 0.5)
             )
             .frame(width: Self.trackWidth)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-
+    /// A slim brass pill. One shallow gradient down its length and a hairline
+    /// edge, and nothing else: the machined grip lines and the stacked sheens
+    /// it used to carry made it the loudest thing on the screen, which is the
+    /// wrong order of importance for a control beside a keyboard.
     private var thumb: some View {
-        RoundedRectangle(cornerRadius: 7, style: .continuous)
+        Capsule(style: .continuous)
             .fill(
-                LinearGradient(colors: [Theme.brassHighlight, Theme.brassMid, Theme.brassShadow],
-                               startPoint: .topLeading, endPoint: .bottomTrailing)
+                LinearGradient(colors: [Theme.brassHighlight, Theme.brassMid],
+                               startPoint: .top, endPoint: .bottom)
             )
             .overlay(
-                LinearGradient(colors: [Color.white.opacity(0.13), .clear, Color.black.opacity(0.13)],
-                               startPoint: .leading, endPoint: .trailing)
-                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                Capsule(style: .continuous)
+                    .strokeBorder(Theme.brassEdge.opacity(0.5), lineWidth: 0.5)
             )
-            .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .strokeBorder(Theme.brassEdge, lineWidth: 0.75)
-            )
-            .overlay(grip)
-            .shadow(color: Color(Theme.shadow).opacity(0.55), radius: 3, x: 0, y: 2)
-    }
-
-    /// Three machined lines across the middle, so the thumb reads as something
-    /// milled rather than drawn.
-    private var grip: some View {
-        VStack(spacing: 3) {
-            ForEach(0..<3, id: \.self) { _ in
-                Capsule()
-                    .fill(Theme.brassEdge.opacity(0.45))
-                    .frame(width: Self.thumbWidth * 0.42, height: 1)
-            }
-        }
+            .shadow(color: Color(Theme.shadow).opacity(0.4), radius: 2, x: 0, y: 1)
     }
 }
 
@@ -202,13 +185,13 @@ struct RangeStepBar: View {
                 Color.clear.frame(width: 44, height: 1)
                 Spacer(minLength: 0)
 
-                StepButton(glyph: "\u{2039}",
+                StepButton(pointsLeft: true,
                            label: "Move keyboard down one octave",
                            isEnabled: range.canStepDown) {
                     step { range.stepOctave(-1) }
                 }
                 Color.clear.frame(width: Self.centreChannel, height: 1)
-                StepButton(glyph: "\u{203A}",
+                StepButton(pointsLeft: false,
                            label: "Move keyboard up one octave",
                            isEnabled: range.canStepUp) {
                     step { range.stepOctave(1) }
@@ -226,41 +209,70 @@ struct RangeStepBar: View {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 }
+/// A chevron drawn rather than typed.
+///
+/// A glyph carries whatever weight its typeface gives it, and every face that
+/// ships with the system draws these far heavier than a piece of brass inlay
+/// would be. A stroked path can be as fine as the hardware it stands for.
+private struct Chevron: Shape {
+
+    let pointsLeft: Bool
+
+    func path(in rect: CGRect) -> Path {
+        let back = pointsLeft ? rect.maxX : rect.minX
+        let tip = pointsLeft ? rect.minX : rect.maxX
+        var path = Path()
+        path.move(to: CGPoint(x: back, y: rect.minY))
+        path.addLine(to: CGPoint(x: tip, y: rect.midY))
+        path.addLine(to: CGPoint(x: back, y: rect.maxY))
+        return path
+    }
+}
+
+/// The recess every control on the rail sits in: a hollow cut into the case,
+/// with a hairline where its lip catches the light. Deliberately quiet, so the
+/// brass inside it is the only thing that reads as hardware.
+private struct ControlRecess: View {
+
+    var cornerRadius: CGFloat = 10
+    var isEnabled: Bool = true
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(Theme.controlRecess.opacity(isEnabled ? 1 : 0.55))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(Theme.controlRim.opacity(isEnabled ? 1 : 0.4),
+                                  lineWidth: 0.5)
+            )
+    }
+}
 
 private struct StepButton: View {
 
-    /// Sized so the chevron stands about as tall as the capitals of the range
-    /// beside it. The system serif draws a much sturdier chevron than the
-    /// script face this started out in, and at the old size it towered over
-    /// the lettering rather than accompanying it. The button around it keeps
-    /// its full size, so the target stays as easy to hit as before.
-    private static let glyphSize: CGFloat = 40
+    /// Fine enough to read as inlay rather than as an icon. Round caps and
+    /// joins, because a milled brass chevron has no sharp corners.
+    private static let stroke: CGFloat = 1.4
+    private static let chevronSize = CGSize(width: 8, height: 15)
 
-    /// A guillemet from the same face, rather than a system chevron, so the
-    /// arrows are lettered in the same hand as the range.
-    let glyph: String
+    let pointsLeft: Bool
     let label: String
     let isEnabled: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Text(glyph)
-                .font(Theme.letteringFont(Self.glyphSize))
-                .offset(y: Theme.letteringVerticalCorrection(of: glyph, size: Self.glyphSize))
+            Chevron(pointsLeft: pointsLeft)
+                .stroke(style: StrokeStyle(lineWidth: Self.stroke,
+                                           lineCap: .round, lineJoin: .round))
                 .foregroundStyle(isEnabled
                                  ? Theme.brassTextColor
-                                 : Theme.brassTextColor.opacity(0.35))
+                                 : Theme.brassTextColor.opacity(0.3))
+                .frame(width: Self.chevronSize.width, height: Self.chevronSize.height)
+                // The target is unchanged; only what is drawn inside it has.
                 .frame(width: 46, height: 44)
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Theme.keybedColor.opacity(isEnabled ? 0.85 : 0.4))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(Theme.trackRim.opacity(isEnabled ? 0.6 : 0.25), lineWidth: 0.5)
-                )
-                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(ControlRecess(isEnabled: isEnabled))
+                .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)

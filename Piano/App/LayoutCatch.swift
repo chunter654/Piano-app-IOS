@@ -28,41 +28,41 @@ struct LayoutCatch: View {
         .accessibilityHint(mode == .single ? "Switches to two stacked rows"
                                           : "Switches to one continuous keyboard")
     }
-
+    /// A hollow cut into the rail, not a plate sitting on it. The brass is now
+    /// only in the marks, which is what stops the control competing with the
+    /// keyboard it sits above.
     private var plate: some View {
-        RoundedRectangle(cornerRadius: 6, style: .continuous)
-            .fill(
-                LinearGradient(colors: [Theme.brassHighlight, Theme.brassMid, Theme.brassShadow],
-                               startPoint: .topLeading, endPoint: .bottomTrailing)
-            )
+        RoundedRectangle(cornerRadius: 7, style: .continuous)
+            .fill(Theme.controlRecess)
             .overlay(
-                LinearGradient(colors: [Color.white.opacity(0.13), .clear, Color.black.opacity(0.13)],
-                               startPoint: .leading, endPoint: .trailing)
-                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .strokeBorder(Theme.brassEdge, lineWidth: 0.75)
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .strokeBorder(Theme.controlRim, lineWidth: 0.5)
             )
             .overlay(engraving)
-            .shadow(color: Color(Theme.shadow).opacity(0.55), radius: 3, x: 0, y: 2)
     }
 
     /// The arrangement the catch will switch to, not the one in force. The
     /// current arrangement is already the largest thing on the screen, so
     /// engraving it here would say nothing; engraving the destination says
     /// what the catch does.
+    ///
+    /// Both marks are hairlines rather than bars. At this size a bar reads as
+    /// a symbol borrowed from some other app, which is exactly what the rest
+    /// of this rail is trying not to look like.
     @ViewBuilder
     private var engraving: some View {
         switch mode.other {
         case .single:
             Capsule()
-                .fill(Theme.brassEdge.opacity(0.55))
-                .frame(width: 4, height: 20)
+                .fill(Theme.brassTextColor.opacity(0.8))
+                .frame(width: 1.5, height: 18)
         case .twoRow:
-            VStack(spacing: 5) {
-                Capsule().fill(Theme.brassEdge.opacity(0.55)).frame(width: 17, height: 4)
-                Capsule().fill(Theme.brassEdge.opacity(0.55)).frame(width: 17, height: 4)
+            VStack(spacing: 4.5) {
+                ForEach(0..<3, id: \.self) { _ in
+                    Capsule()
+                        .fill(Theme.brassTextColor.opacity(0.8))
+                        .frame(width: 16, height: 1.5)
+                }
             }
         }
     }
