@@ -79,11 +79,16 @@ struct ContentView: View {
             case .twoRow: stacked
             }
         }
-        .padding(7)
+        // The margins around the keys are the wooden case, and they are the only
+        // vertical space on the screen that is ours to spend: above and below
+        // them sit the status bar and the home indicator, which are not. Pared
+        // back to what still reads as a case rather than an edge.
+        .padding(.vertical, 4)
+        .padding(.horizontal, 7)
         .background(keybed)
         .padding(.horizontal, 11)
-        .padding(.top, 9)
-        .padding(.bottom, 11)
+        .padding(.top, 4)
+        .padding(.bottom, 5)
     }
 
     private var singleColumn: some View {
