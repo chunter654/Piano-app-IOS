@@ -18,8 +18,10 @@ struct LayoutCatch: View {
         Button(action: action) {
             plate
                 .frame(width: Self.plateWidth, height: Self.plateHeight)
-                // A comfortable target around a deliberately small plate.
-                .frame(width: 44, height: 48)
+                // Fills the control column rather than claiming a fixed width,
+                // so narrowing that column narrows the target with it instead
+                // of leaving it hanging over the keys.
+                .frame(maxWidth: .infinity, minHeight: 48)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

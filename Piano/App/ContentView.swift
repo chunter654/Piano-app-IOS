@@ -91,15 +91,26 @@ struct ContentView: View {
         .padding(.bottom, 5)
     }
 
+    /// How much of the width the controls take beside the keyboard, and the gap
+    /// between them and the keys. Every point taken off either is a point of key
+    /// length gained, so this is the dial to turn if the keys ever feel short.
+    ///
+    /// There is a floor. The catch and the slider are both as wide as this
+    /// column, and Apple puts the smallest comfortable target at 44 points.
+    /// Below about 30 they become genuinely fiddly to hit, particularly the
+    /// catch, which is a single small tap rather than a drag you can correct.
+    private static let controlColumnWidth: CGFloat = 36
+    private static let controlColumnGap: CGFloat = 7
+
     private var singleColumn: some View {
-        HStack(spacing: 9) {
+        HStack(spacing: Self.controlColumnGap) {
             keyboard
 
             VStack(spacing: 10) {
                 LayoutCatch(mode: range.mode) { range.toggleMode() }
                 RangeSlider(range: range)
             }
-            .frame(width: 44)
+            .frame(width: Self.controlColumnWidth)
         }
     }
 
