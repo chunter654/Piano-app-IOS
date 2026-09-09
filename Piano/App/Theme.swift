@@ -128,11 +128,15 @@ enum Theme {
     /// front barely moves: a pressed key is tipped toward you and catches
     /// light along its whole length, which is both what the eye needs and
     /// what the thing itself would do.
+    ///
+    /// The whole ramp was then scaled back by about a fifth. Lighting the
+    /// back of the key is the point; lifting the overall level was a side
+    /// effect of doing it, and one stop too far.
     static let blackKeyPressed = [
-        rgb(0.412, 0.313, 0.240).cgColor,
-        rgb(0.360, 0.270, 0.200).cgColor,
-        rgb(0.310, 0.228, 0.166).cgColor,
-        rgb(0.250, 0.180, 0.128).cgColor,
+        rgb(0.333, 0.253, 0.194).cgColor,
+        rgb(0.291, 0.218, 0.162).cgColor,
+        rgb(0.251, 0.184, 0.134).cgColor,
+        rgb(0.202, 0.146, 0.104).cgColor,
     ]
 
     /// Where the gradient stops sit along a key, front to back. The first pair
@@ -202,8 +206,19 @@ enum Theme {
     /// The cap is outlined the whole way round, brighter along the top lip
     /// than the bottom. Fading one side to nothing left the shape with no
     /// lower edge, so the eye could not tell where the button stopped.
-    static let capEdgeTop = Color(rgb(0.706, 0.612, 0.435, 0.60))
-    static let capEdgeBottom = Color(rgb(0.706, 0.612, 0.435, 0.34))
+    /// One weight the whole way round. A bevel that varies looks machined, and
+    /// this is meant to look soft.
+    static let capEdge = Color(rgb(0.706, 0.612, 0.435, 0.46))
+
+    /// Light gathering just above the middle of the face, falling away to the
+    /// edges. A dome rather than a panel, which is most of what makes a button
+    /// look like it would give under a thumb.
+    static let capDome = Color(rgb(0.176, 0.132, 0.092))
+
+    /// The face curving away at the bottom, and the whole thing dimmed while
+    /// it is held down.
+    static let capUnderside = Color(rgb(0.028, 0.018, 0.011))
+    static let capPressed = Color(rgb(0.062, 0.043, 0.029))
 
     // MARK: - SwiftUI
 
