@@ -47,7 +47,7 @@ struct RangeSlider: View {
 
             ZStack(alignment: .top) {
                 track
-                thumb(width: width)
+                BrassBar(axis: .vertical, thickness: width)
                     .frame(width: width, height: thumbHeight)
                     .offset(y: CGFloat(range.progress) * travel)
             }
@@ -123,50 +123,185 @@ struct RangeSlider: View {
         let fraction = travel > 0 ? Double(top / travel) : 0
         range.setPosition(fraction * range.maxPosition)
     }
+    // MARK: - Hardware
 
-    // MARK: - Hardware    /// A channel cut into the case.
-    ///
-    /// Shaded across its width, not down its length: the near wall falls into
-    /// shadow and the far one catches what light reaches into the cut, with the
-    /// faintest brass along the lip where the edge is broken. Fill it flat and
-    /// it stops being a groove and becomes a dark line drawn on the wood.
     private var track: some View {
-        Capsule(style: .continuous)
-            .fill(
-                LinearGradient(colors: [Theme.grooveNearWall, Theme.grooveFarWall],
-                               startPoint: .leading, endPoint: .trailing)
-            )
-            .overlay(
-                Capsule(style: .continuous)
-                    .strokeBorder(
-                        LinearGradient(colors: [.clear, Theme.grooveLip],
-                                       startPoint: .leading, endPoint: .trailing),
-                        lineWidth: 0.5
-                    )
-            )
+        Groove(axis: .vertical)
             .frame(width: Self.trackWidth)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+}
+/// The stacked arrangement's range control: a slider showing where its two
+/// octaves sit on the piano.
+///
+/// The track is the whole instrument and the thumb is the part of it on screen,
+/// which is the same idea the single column uses, so both arrangements answer
+/// "where am I" the same way.
+///
+/// The window can only rest on one of six Cs, but the thumb glides rather than
+/// snapping, so your finger moves smoothly while the keyboard steps underneath.
+/// On release it settles onto the octave the instrument actually reached: that
+/// is the one moment it must not be left showing a position that is not real.
+///
+/// Note where the thumb stops at the left. The lowest this arrangement goes is
+/// C1, so the bottom three notes of the piano are never in view, and the gap is
+/// the truth rather than a rounding error.
+struct RangeStepBar: View {
 
-    /// A bar of turned brass, seated in the groove.
-    ///
-    /// The light runs across it rather than down it. A cylinder lit from one
-    /// side is bright along a line and falls away to both edges, and that is
-    /// what makes this read as a machined part; a top-to-bottom fade is what
-    /// every slider on every phone does, and no amount of colour rescues it.
-    ///
-    /// Its width is not up for negotiation. This is something you find with a
-    /// thumb without looking, and elegance that costs you the target is not
-    /// elegance.
-    private func thumb(width: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+    @ObservedObject var range: KeyboardRangeController
+    let onToggleArrangement: () -> Void
+
+    /// Where the finger has dragged to, as a fraction of the whole piano, or nil
+    /// when the thumb is resting on the octave the keyboard is actually at.
+    @State private var glide: Double?
+    /// Whether this drag began on the thumb. Judged once, as the other slider
+    /// does it, so a touch that misses is ignored for its whole duration.
+    @State private var grabbed: Bool?
+
+    private static let trackThickness: CGFloat = 5
+    private static let thumbThickness: CGFloat = 20
+    private static let catchWidth: CGFloat = 30
+    private static let gap: CGFloat = 10
+    private static let grabSlack: CGFloat = 12
+
+    private static let lowest = Double(PianoNote.lowest.midi)
+    private static let semitones = Double(PianoNote.highest.midi - PianoNote.lowest.midi)
+
+    /// The share of the piano the two visible octaves take up.
+    private static var thumbShare: Double {
+        Double(KeyboardRangeController.stackedSpan) / semitones
+    }
+
+    /// The two ends of the thumb's travel, in the same fraction.
+    private static var lowestFraction: Double {
+        (Double(KeyboardRangeController.octaveStarts.first ?? 24) - lowest) / semitones
+    }
+    private static var highestFraction: Double {
+        (Double(KeyboardRangeController.octaveStarts.last ?? 84) - lowest) / semitones
+    }
+
+    private var restingFraction: Double {
+        (Double(range.startNote) - Self.lowest) / Self.semitones
+    }
+
+    var body: some View {
+        HStack(spacing: Self.gap) {
+            GeometryReader { geo in
+                let full = geo.size.width
+                let thumbWidth = CGFloat(Self.thumbShare) * full
+                let fraction = glide ?? restingFraction
+
+                ZStack(alignment: .leading) {
+                    Groove(axis: .horizontal)
+                        .frame(height: Self.trackThickness)
+                        .frame(maxHeight: .infinity)
+                    BrassBar(axis: .horizontal, thickness: Self.thumbThickness)
+                        .frame(width: thumbWidth, height: Self.thumbThickness)
+                        .offset(x: CGFloat(fraction) * full)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            if grabbed == nil {
+                                let left = CGFloat(restingFraction) * full
+                                let reach = (left - Self.grabSlack)
+                                    ... (left + thumbWidth + Self.grabSlack)
+                                grabbed = reach.contains(value.startLocation.x)
+                            }
+                            guard grabbed == true, full > 0 else { return }
+                            let moved = Double(value.translation.width / full)
+                            drag(to: restingOrGlideStart + moved)
+                        }
+                        .onEnded { _ in
+                            grabbed = nil
+                            glideStart = nil
+                            // Settle onto the octave the keyboard actually reached.
+                            withAnimation(.easeOut(duration: 0.16)) { glide = nil }
+                        }
+                )
+            }
+            LayoutCatch(mode: range.mode, width: Self.catchWidth,
+                        action: onToggleArrangement)
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    /// Where the thumb sat when this drag began, so the movement is relative and
+    /// the thumb stays under the part of it you took hold of.
+    @State private var glideStart: Double?
+
+    private var restingOrGlideStart: Double {
+        if let start = glideStart { return start }
+        return restingFraction
+    }
+
+    private func drag(to proposed: Double) {
+        if glideStart == nil { glideStart = restingFraction }
+        let held = min(max(proposed, Self.lowestFraction), Self.highestFraction)
+        glide = held
+        // The keyboard steps to the nearest octave while the thumb keeps moving,
+        // and each step knocks. That feedback used to come from the two arrows
+        // this slider replaced, and it is worth more here: the thumb glides, so
+        // without it there is nothing to tell you the instrument has moved.
+        let note = Self.lowest + held * Self.semitones
+        if range.setStartNote(Int(note.rounded())) {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        }
+    }
+}
+
+/// The channel a slider runs in, on either axis.
+///
+/// Shaded across its width rather than along its length: the near wall falls
+/// into shadow and the far one catches what light reaches into the cut, with the
+/// faintest brass along the broken lip. Filled flat it stops being a groove and
+/// becomes a dark line drawn on the wood.
+struct Groove: View {
+
+    let axis: Axis
+
+    var body: some View {
+        let across = LinearGradient(colors: [Theme.grooveNearWall, Theme.grooveFarWall],
+                                    startPoint: axis == .vertical ? .leading : .top,
+                                    endPoint: axis == .vertical ? .trailing : .bottom)
+        let lip = LinearGradient(colors: [.clear, Theme.grooveLip],
+                                 startPoint: axis == .vertical ? .leading : .top,
+                                 endPoint: axis == .vertical ? .trailing : .bottom)
+        return Capsule(style: .continuous)
+            .fill(across)
+            .overlay(Capsule(style: .continuous).strokeBorder(lip, lineWidth: 0.5))
+    }
+}
+
+/// The bar of turned brass that rides in a groove, on either axis.
+///
+/// The light runs across the bar rather than along it. A cylinder lit from one
+/// side is bright along a line and falls away to both edges, which is what makes
+/// this read as a machined part. A fade along its length is what every slider on
+/// every phone does, and no amount of colour rescues that.
+///
+/// Defined once and used by both arrangements, because they are the same piece
+/// of hardware seen twice and describing them separately is how two controls
+/// stop matching.
+struct BrassBar: View {
+
+    let axis: Axis
+    /// The measurement across the bar, which the machined lines are cut from.
+    let thickness: CGFloat
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+        return shape
             .fill(
                 LinearGradient(stops: [
                     .init(color: Theme.brassShadow, location: 0),
                     .init(color: Theme.brassHighlight, location: 0.30),
                     .init(color: Theme.brassMid, location: 0.66),
                     .init(color: Theme.brassShadow, location: 1),
-                ], startPoint: .leading, endPoint: .trailing)
+                ], startPoint: axis == .vertical ? .leading : .top,
+                   endPoint: axis == .vertical ? .trailing : .bottom)
             )
             // The ends are cut faces, turned away from the light.
             .overlay(
@@ -175,129 +310,36 @@ struct RangeSlider: View {
                     .init(color: .clear, location: 0.09),
                     .init(color: .clear, location: 0.91),
                     .init(color: Color.black.opacity(0.35), location: 1),
-                ], startPoint: .top, endPoint: .bottom)
+                ], startPoint: axis == .vertical ? .top : .leading,
+                   endPoint: axis == .vertical ? .bottom : .trailing)
             )
-            .overlay(knurl(width: width))
-            // No outline. The gradient already falls to shadow at both edges,
-            // which defines the shape without a dark ring round it: the ring is
-            // what was reading as weight, and weight is what made it look bulky.
-            .clipShape(RoundedRectangle(cornerRadius: 3.5, style: .continuous))
+            .overlay(knurl)
+            .clipShape(shape)
             .shadow(color: Color(Theme.shadow).opacity(0.38), radius: 1.5, x: 0, y: 0.5)
     }
 
     /// Two fine lines turned into the middle of the bar, where a thumb sits.
-    /// Enough to say the part was machined, far short of the milled grip this
-    /// carried before, which made it the loudest thing on the screen.
-    private func knurl(width: CGFloat) -> some View {
-        VStack(spacing: 3.5) {
-            ForEach(0..<2, id: \.self) { _ in
-                Capsule()
-                    .fill(Theme.brassEdge.opacity(0.30))
-                    .frame(width: width * 0.52, height: 0.75)
+    @ViewBuilder
+    private var knurl: some View {
+        let length = thickness * 0.52
+        if axis == .vertical {
+            VStack(spacing: 3.5) {
+                ForEach(0..<2, id: \.self) { _ in
+                    Capsule().fill(Theme.brassEdge.opacity(0.30))
+                        .frame(width: length, height: 0.75)
+                }
+            }
+        } else {
+            HStack(spacing: 3.5) {
+                ForEach(0..<2, id: \.self) { _ in
+                    Capsule().fill(Theme.brassEdge.opacity(0.30))
+                        .frame(width: 0.75, height: length)
+                }
             }
         }
     }
 }
 
-/// The stacked arrangement's range control: a semitone down, the range it spans,
-/// and a semitone up. It replaces the slider entirely in that mode, because a
-/// window that steps a semitone at a time is not something you slide.
-struct RangeStepBar: View {
-
-    @ObservedObject var range: KeyboardRangeController
-    let onToggleArrangement: () -> Void
-    /// The stack's own gap between neighbouring controls.
-    private static let controlSpacing: CGFloat = 8
-
-    /// The clear channel the range sits in, between the two arrows. Fixed
-    /// rather than flexible: a spacer here pushed the arrows out to the ends of
-    /// the bar, a long way from the lettering they act on.
-    private static let centreChannel: CGFloat = 105
-
-    /// The catch, and the empty space reserved opposite it. One constant for
-    /// both, because the pair being equal is what centres the range.
-    private static let catchWidth: CGFloat = 44
-
-    /// What the range has to fit within: the channel plus the stack's spacing
-    /// on either side of it.
-    private static var rangeWidth: CGFloat { centreChannel + controlSpacing * 2 }
-
-    /// Deliberately quiet. The range is a label on the instrument, not a
-    /// headline, and at anything like the size it started at it competed with
-    /// the keys. Well under the channel, so it is drawn at the size named here
-    /// rather than shrunk to fit.
-    private static let rangeTextSize: CGFloat = 22
-
-    var body: some View {
-        // The range sits centred on the whole bar, with every control laid over
-        // it. Placing the text beside the controls instead pushes it off-centre
-        // by half the catch's width, because nothing balances the catch on the
-        // left.
-        ZStack {
-            Text(range.stackedDisplayName)
-                .font(Theme.letteringFont(Self.rangeTextSize))
-                .kerning(0.5)
-                .foregroundStyle(Theme.brassTextColor)
-                .lineLimit(1)
-                .minimumScaleFactor(0.55)
-                // Held to the channel the arrows leave it, so it cannot run
-                // under one however the range comes to be written.
-                .frame(maxWidth: Self.rangeWidth)
-                .offset(y: Theme.letteringVerticalCorrection(of: range.stackedDisplayName,
-                                                              size: Self.rangeTextSize))
-                .accessibilityLabel("Keyboard range")
-                .accessibilityValue(range.stackedSpokenName)
-
-            HStack(spacing: Self.controlSpacing) {
-                // Reserves the catch's width on the left, so the pair of arrows
-                // centres on the same line the range does.
-                Color.clear.frame(width: Self.catchWidth, height: 1)
-                Spacer(minLength: 0)
-
-                StepButton(pointsLeft: true,
-                           label: "Move keyboard down one octave",
-                           isEnabled: range.canStepDown) {
-                    step { range.stepOctave(-1) }
-                }
-                Color.clear.frame(width: Self.centreChannel, height: 1)
-                StepButton(pointsLeft: false,
-                           label: "Move keyboard up one octave",
-                           isEnabled: range.canStepUp) {
-                    step { range.stepOctave(1) }
-                }
-
-                Spacer(minLength: 0)
-                LayoutCatch(mode: range.mode, width: Self.catchWidth,
-                            action: onToggleArrangement)
-            }
-        }
-    }
-
-    /// A light tap confirms the step, and stays silent at the ends of the piano.
-    private func step(_ move: () -> Bool) {
-        guard move() else { return }
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-    }
-}
-/// A chevron drawn rather than typed.
-///
-/// A glyph carries whatever weight its typeface gives it, and every face that
-/// ships with the system draws these far heavier than a piece of brass inlay
-/// would be. A stroked path can be as fine as the hardware it stands for.
-private struct Chevron: Shape {
-
-    let pointsLeft: Bool
-
-    func path(in rect: CGRect) -> Path {
-        let back = pointsLeft ? rect.maxX : rect.minX
-        let tip = pointsLeft ? rect.minX : rect.maxX
-        var path = Path()
-        path.move(to: CGPoint(x: back, y: rect.minY))
-        path.addLine(to: CGPoint(x: tip, y: rect.midY))
-        path.addLine(to: CGPoint(x: back, y: rect.maxY))
-        return path
-    }
-}
 /// The cap every pressable control on the rail wears.
 ///
 /// Defined once and worn by both the arrows and the layout catch, because they
@@ -365,44 +407,5 @@ struct SoftCapStyle: ButtonStyle {
                     .scaleEffect(down ? 0.97 : 1)
                     .animation(.easeOut(duration: 0.09), value: down)
             )
-    }
-}
-
-private struct StepButton: View {
-
-    /// Fine enough to read as inlay rather than as an icon. Round caps and
-    /// joins, because a milled brass chevron has no sharp corners.
-    private static let stroke: CGFloat = 1.4
-    private static let chevronSize = CGSize(width: 8, height: 15)
-
-    /// What you can hit, which is not what you can see. The target keeps the
-    /// full 46 by 44 it has always had, so shrinking the cap inside it to
-    /// match the catch costs nothing in reach, and the rail does not move
-    /// because the stack is laid out from the target rather than the cap.
-    private static let targetSize = CGSize(width: 46, height: 44)
-    private static let capSize = CGSize(width: 30, height: 38)
-
-    let pointsLeft: Bool
-    let label: String
-    let isEnabled: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Chevron(pointsLeft: pointsLeft)
-                .stroke(style: StrokeStyle(lineWidth: Self.stroke,
-                                           lineCap: .round, lineJoin: .round))
-                .foregroundStyle(isEnabled
-                                 ? Theme.brassTextColor
-                                 : Theme.brassTextColor.opacity(0.3))
-                .frame(width: Self.chevronSize.width, height: Self.chevronSize.height)
-                // The target is unchanged; only what is drawn inside it has.
-                .frame(width: Self.targetSize.width, height: Self.targetSize.height)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(SoftCapStyle(capSize: Self.capSize, isEnabled: isEnabled))
-        .disabled(!isEnabled)
-        .accessibilityLabel(label)
-        .accessibilityHint(isEnabled ? "" : "The keyboard is already at the end of the piano")
     }
 }

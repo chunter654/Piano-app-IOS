@@ -30,8 +30,19 @@ tracks every finger separately to make chords and sliding work, and a pinch
 there would be read as two notes.
 
 **Stacked.** Two rows of a conventional keyboard, one octave each, with the
-lower octave on top. The chevrons either side of the range move a whole octave
-at a time, so the rows always start on a C.
+lower octave on top. A slider along the top shows where those two octaves sit on
+the piano: the track is the whole instrument and the thumb is the part in view,
+which is the same idea the single column uses, so both arrangements answer where
+you are the same way.
+
+The window can only rest on one of six Cs, so the keyboard steps by a whole
+octave while the thumb glides smoothly under your finger, knocking at each step.
+On release the thumb settles onto the octave actually reached, since that is the
+one moment it must not be left showing a position that is not real.
+
+Its travel stops short of the left end. The lowest this arrangement reaches is
+C1, so the bottom three notes of the piano are never in view, and that gap is
+the truth rather than a rounding error.
 
 Neither arrangement is drawn from a stored layout. Both are generated from a
 starting MIDI note, so any range of the piano can be shown and nothing has to
