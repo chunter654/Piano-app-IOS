@@ -30,8 +30,8 @@ struct RangeSlider: View {
     /// to take hold of and needs the mass. Between them the handle keeps sane
     /// proportions instead of becoming a stub at one end of the zoom and a ribbon
     /// at the other.
-    private static let widestThumb: CGFloat = 26
-    private static let narrowestThumb: CGFloat = 12
+    private static let widestThumb: CGFloat = 24
+    private static let narrowestThumb: CGFloat = 17
     private static let minimumThumbHeight: CGFloat = 34
     /// How far past the thumb still counts as grabbing it.
     private static let grabSlack: CGFloat = 10
