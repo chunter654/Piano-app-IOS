@@ -38,10 +38,13 @@ struct LayoutCatch: View {
     /// only control here you press rather than drag, and it should look like
     /// something that goes down when you do.
     ///
-    /// The bevel does the work rather than an outline: light along the top lip,
-    /// dark along the bottom, which is how a machined cap catches light. A
-    /// stroke of even weight all the way round is what makes a shape read as a
-    /// rectangle drawn on a screen.
+    /// Outlined the whole way round in brass, brighter along the top lip than
+    /// the bottom. An earlier version faded the lower half of that edge away
+    /// to nothing, on the theory that a bevel reads as hardware where an
+    /// even stroke reads as a rectangle drawn on a screen. It does, but it
+    /// also left the shape with no bottom edge, so you could not tell where
+    /// the button ended or whether it was one. Both ends of the fade are
+    /// visible now.
     private var plate: some View {
         RoundedRectangle(cornerRadius: 7, style: .continuous)
             .fill(
@@ -51,10 +54,9 @@ struct LayoutCatch: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .strokeBorder(
-                        LinearGradient(colors: [Theme.controlEdge,
-                                                Theme.brassEdge.opacity(0.55)],
+                        LinearGradient(colors: [Theme.capEdgeTop, Theme.capEdgeBottom],
                                        startPoint: .top, endPoint: .bottom),
-                        lineWidth: 0.75
+                        lineWidth: 1
                     )
             )
             .shadow(color: Color(Theme.shadow).opacity(0.5), radius: 2, x: 0, y: 1.5)
@@ -71,13 +73,13 @@ struct LayoutCatch: View {
         case .single:
             Capsule()
                 .fill(Theme.brassTextColor.opacity(0.8))
-                .frame(width: 1.5, height: 18)
+                .frame(width: 2, height: 20)
         case .twoRow:
             VStack(spacing: 6) {
                 ForEach(0..<2, id: \.self) { _ in
                     Capsule()
                         .fill(Theme.brassTextColor.opacity(0.8))
-                        .frame(width: 16, height: 1.5)
+                        .frame(width: 18, height: 2)
                 }
             }
         }

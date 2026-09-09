@@ -119,15 +119,20 @@ enum Theme {
         rgb(0.067, 0.043, 0.028).cgColor,
     ]
 
-    /// Lifted further off the resting colour than the naturals are, because a
-    /// dark key against a dark keybed shows a change far less readily than an
-    /// ivory one does. The same warmth throughout: a grey flash would read as
-    /// the key being lit rather than struck.
+    /// Flatter than the resting ramp, not merely brighter than it.
+    ///
+    /// The gradient runs brightest at the struck end, and that end is under
+    /// the finger the moment the key sounds. What you can actually see while
+    /// playing is the back of the key, which the resting ramp leaves nearly
+    /// black across its last half. So the back lifts furthest here and the
+    /// front barely moves: a pressed key is tipped toward you and catches
+    /// light along its whole length, which is both what the eye needs and
+    /// what the thing itself would do.
     static let blackKeyPressed = [
         rgb(0.412, 0.313, 0.240).cgColor,
-        rgb(0.333, 0.247, 0.180).cgColor,
-        rgb(0.219, 0.153, 0.107).cgColor,
-        rgb(0.114, 0.073, 0.048).cgColor,
+        rgb(0.360, 0.270, 0.200).cgColor,
+        rgb(0.310, 0.228, 0.166).cgColor,
+        rgb(0.250, 0.180, 0.128).cgColor,
     ]
 
     /// Where the gradient stops sit along a key, front to back. The first pair
@@ -183,8 +188,14 @@ enum Theme {
     /// proud instead of sinking in. Barely: the top of its face is a shade
     /// lighter than the keybed and the bottom a shade darker, which is enough
     /// for the eye to read a cap without anything looking moulded.
-    static let capFaceTop = Color(rgb(0.126, 0.092, 0.064))
-    static let capFaceBottom = Color(rgb(0.072, 0.048, 0.032))
+    static let capFaceTop = Color(rgb(0.152, 0.112, 0.078))
+    static let capFaceBottom = Color(rgb(0.096, 0.066, 0.045))
+
+    /// The cap is outlined the whole way round, brighter along the top lip
+    /// than the bottom. Fading one side to nothing left the shape with no
+    /// lower edge, so the eye could not tell where the button stopped.
+    static let capEdgeTop = Color(rgb(0.706, 0.612, 0.435, 0.60))
+    static let capEdgeBottom = Color(rgb(0.706, 0.612, 0.435, 0.34))
 
     // MARK: - SwiftUI
 
