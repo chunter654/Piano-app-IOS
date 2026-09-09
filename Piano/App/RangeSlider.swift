@@ -22,7 +22,7 @@ struct RangeSlider: View {
     @State private var zoomAtPinchStart: Double?
 
     private static let trackWidth: CGFloat = 5
-    private static let thumbWidth: CGFloat = 13
+    private static let thumbWidth: CGFloat = 16
     private static let minimumThumbHeight: CGFloat = 34
     /// How far past the thumb still counts as grabbing it.
     private static let grabSlack: CGFloat = 10
@@ -354,9 +354,12 @@ private struct StepButton: View {
     private static let stroke: CGFloat = 1.4
     private static let chevronSize = CGSize(width: 8, height: 15)
 
-    /// Unchanged from when these were bare hollows, so putting a cap on them
-    /// moves nothing else on the rail.
-    private static let capSize = CGSize(width: 46, height: 44)
+    /// What you can hit, which is not what you can see. The target keeps the
+    /// full 46 by 44 it has always had, so shrinking the cap inside it to
+    /// match the catch costs nothing in reach, and the rail does not move
+    /// because the stack is laid out from the target rather than the cap.
+    private static let targetSize = CGSize(width: 46, height: 44)
+    private static let capSize = CGSize(width: 30, height: 38)
 
     let pointsLeft: Bool
     let label: String
@@ -373,8 +376,8 @@ private struct StepButton: View {
                                  : Theme.brassTextColor.opacity(0.3))
                 .frame(width: Self.chevronSize.width, height: Self.chevronSize.height)
                 // The target is unchanged; only what is drawn inside it has.
-                .frame(width: Self.capSize.width, height: Self.capSize.height)
-                .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .frame(width: Self.targetSize.width, height: Self.targetSize.height)
+                .contentShape(Rectangle())
         }
         .buttonStyle(SoftCapStyle(capSize: Self.capSize, isEnabled: isEnabled))
         .disabled(!isEnabled)

@@ -133,10 +133,10 @@ enum Theme {
     /// back of the key is the point; lifting the overall level was a side
     /// effect of doing it, and one stop too far.
     static let blackKeyPressed = [
-        rgb(0.333, 0.253, 0.194).cgColor,
-        rgb(0.291, 0.218, 0.162).cgColor,
-        rgb(0.251, 0.184, 0.134).cgColor,
-        rgb(0.202, 0.146, 0.104).cgColor,
+        rgb(0.300, 0.228, 0.175).cgColor,
+        rgb(0.262, 0.196, 0.146).cgColor,
+        rgb(0.226, 0.166, 0.121).cgColor,
+        rgb(0.182, 0.131, 0.094).cgColor,
     ]
 
     /// Where the gradient stops sit along a key, front to back. The first pair
