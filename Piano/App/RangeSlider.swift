@@ -22,7 +22,16 @@ struct RangeSlider: View {
     @State private var zoomAtPinchStart: Double?
 
     private static let trackWidth: CGFloat = 5
-    private static let thumbWidth: CGFloat = 16
+    /// The thumb is widest when it is shortest and narrowest when it is longest.
+    ///
+    /// Its length already reports how much of the piano is on screen, so this is
+    /// not new information, it is compensation. A long thumb is trivially easy to
+    /// catch and can afford to be slender, while a short one has almost nothing
+    /// to take hold of and needs the mass. Between them the handle keeps sane
+    /// proportions instead of becoming a stub at one end of the zoom and a ribbon
+    /// at the other.
+    private static let widestThumb: CGFloat = 22
+    private static let narrowestThumb: CGFloat = 14
     private static let minimumThumbHeight: CGFloat = 34
     /// How far past the thumb still counts as grabbing it.
     private static let grabSlack: CGFloat = 10
@@ -33,12 +42,13 @@ struct RangeSlider: View {
             let visibleFraction = range.visibleWhiteKeys
                 / Double(KeyboardRangeController.whiteKeyCount)
             let thumbHeight = max(Self.minimumThumbHeight, height * CGFloat(visibleFraction))
+            let width = Self.thumbWidth(showing: range.visibleWhiteKeys)
             let travel = max(1, height - thumbHeight)
 
             ZStack(alignment: .top) {
                 track
-                thumb
-                    .frame(width: Self.thumbWidth, height: thumbHeight)
+                thumb(width: width)
+                    .frame(width: width, height: thumbHeight)
                     .offset(y: CGFloat(range.progress) * travel)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -94,6 +104,17 @@ struct RangeSlider: View {
         }
     }
 
+    /// Interpolated across the zoom range rather than taken from the height of
+    /// the thumb, so it depends on how much piano is on screen and not on how
+    /// tall the screen happens to be.
+    private static func thumbWidth(showing keys: Double) -> CGFloat {
+        let lowest = KeyboardRangeController.minVisibleWhiteKeys
+        let highest = KeyboardRangeController.maxVisibleWhiteKeys
+        guard highest > lowest else { return widestThumb }
+        let travelled = min(max((keys - lowest) / (highest - lowest), 0), 1)
+        return widestThumb - CGFloat(travelled) * (widestThumb - narrowestThumb)
+    }
+
     /// Moves the thumb by however far the finger has travelled since it landed,
     /// rather than centring it on the finger. That keeps the thumb under the
     /// part of it you actually grabbed, and nothing quantises the movement.
@@ -137,7 +158,7 @@ struct RangeSlider: View {
     /// Its width is not up for negotiation. This is something you find with a
     /// thumb without looking, and elegance that costs you the target is not
     /// elegance.
-    private var thumb: some View {
+    private func thumb(width: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: 3.5, style: .continuous)
             .fill(
                 LinearGradient(stops: [
@@ -156,7 +177,7 @@ struct RangeSlider: View {
                     .init(color: Color.black.opacity(0.35), location: 1),
                 ], startPoint: .top, endPoint: .bottom)
             )
-            .overlay(knurl)
+            .overlay(knurl(width: width))
             // No outline. The gradient already falls to shadow at both edges,
             // which defines the shape without a dark ring round it: the ring is
             // what was reading as weight, and weight is what made it look bulky.
@@ -167,12 +188,12 @@ struct RangeSlider: View {
     /// Two fine lines turned into the middle of the bar, where a thumb sits.
     /// Enough to say the part was machined, far short of the milled grip this
     /// carried before, which made it the loudest thing on the screen.
-    private var knurl: some View {
+    private func knurl(width: CGFloat) -> some View {
         VStack(spacing: 3.5) {
             ForEach(0..<2, id: \.self) { _ in
                 Capsule()
                     .fill(Theme.brassEdge.opacity(0.30))
-                    .frame(width: Self.thumbWidth * 0.52, height: 0.75)
+                    .frame(width: width * 0.52, height: 0.75)
             }
         }
     }
