@@ -179,6 +179,14 @@ enum Theme {
     /// Barely there: the light along the lip of a routed edge, not an outline.
     static let controlRim = Color(rgb(0.400, 0.310, 0.212, 0.22))
 
+    /// A groove has two walls, and with the light coming from the upper left
+    /// the near one is in shadow while the far one catches a little. Shading it
+    /// across its width rather than down its length is what separates a channel
+    /// cut into wood from a dark line drawn on top of it.
+    static let grooveNearWall = Color(rgb(0.031, 0.019, 0.012))
+    static let grooveFarWall = Color(rgb(0.082, 0.057, 0.039))
+    static let grooveLip = Color(rgb(0.400, 0.310, 0.212, 0.30))
+
     /// Brass, thin, and only on the things you press. The groove the slider
     /// runs in keeps the fainter rim above: it is a channel, not a control, and
     /// outlining it too would put every edge on the rail at the same weight.

@@ -103,34 +103,78 @@ struct RangeSlider: View {
         range.setPosition(fraction * range.maxPosition)
     }
 
-    // MARK: - Hardware
-    /// A groove routed into the case. Darker than anything around it, with the
-    /// faintest lip, so the thumb is the only part of the control with weight.
+    // MARK: - Hardware    /// A channel cut into the case.
+    ///
+    /// Shaded across its width, not down its length: the near wall falls into
+    /// shadow and the far one catches what light reaches into the cut, with the
+    /// faintest brass along the lip where the edge is broken. Fill it flat and
+    /// it stops being a groove and becomes a dark line drawn on the wood.
     private var track: some View {
         Capsule(style: .continuous)
-            .fill(Theme.controlRecess)
+            .fill(
+                LinearGradient(colors: [Theme.grooveNearWall, Theme.grooveFarWall],
+                               startPoint: .leading, endPoint: .trailing)
+            )
             .overlay(
                 Capsule(style: .continuous)
-                    .strokeBorder(Theme.controlRim, lineWidth: 0.5)
+                    .strokeBorder(
+                        LinearGradient(colors: [.clear, Theme.grooveLip],
+                                       startPoint: .leading, endPoint: .trailing),
+                        lineWidth: 0.5
+                    )
             )
             .frame(width: Self.trackWidth)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    /// A slim brass pill. One shallow gradient down its length and a hairline
-    /// edge, and nothing else: the machined grip lines and the stacked sheens
-    /// it used to carry made it the loudest thing on the screen, which is the
-    /// wrong order of importance for a control beside a keyboard.
+
+    /// A bar of turned brass, seated in the groove.
+    ///
+    /// The light runs across it rather than down it. A cylinder lit from one
+    /// side is bright along a line and falls away to both edges, and that is
+    /// what makes this read as a machined part; a top-to-bottom fade is what
+    /// every slider on every phone does, and no amount of colour rescues it.
+    ///
+    /// Its width is not up for negotiation. This is something you find with a
+    /// thumb without looking, and elegance that costs you the target is not
+    /// elegance.
     private var thumb: some View {
-        Capsule(style: .continuous)
+        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
             .fill(
-                LinearGradient(colors: [Theme.brassHighlight, Theme.brassMid],
-                               startPoint: .top, endPoint: .bottom)
+                LinearGradient(stops: [
+                    .init(color: Theme.brassShadow, location: 0),
+                    .init(color: Theme.brassHighlight, location: 0.30),
+                    .init(color: Theme.brassMid, location: 0.66),
+                    .init(color: Theme.brassShadow, location: 1),
+                ], startPoint: .leading, endPoint: .trailing)
             )
+            // The ends are cut faces, turned away from the light.
             .overlay(
-                Capsule(style: .continuous)
-                    .strokeBorder(Theme.brassEdge.opacity(0.5), lineWidth: 0.5)
+                LinearGradient(stops: [
+                    .init(color: Color.black.opacity(0.35), location: 0),
+                    .init(color: .clear, location: 0.09),
+                    .init(color: .clear, location: 0.91),
+                    .init(color: Color.black.opacity(0.35), location: 1),
+                ], startPoint: .top, endPoint: .bottom)
             )
-            .shadow(color: Color(Theme.shadow).opacity(0.4), radius: 2, x: 0, y: 1)
+            .overlay(knurl)
+            // No outline. The gradient already falls to shadow at both edges,
+            // which defines the shape without a dark ring round it: the ring is
+            // what was reading as weight, and weight is what made it look bulky.
+            .clipShape(RoundedRectangle(cornerRadius: 3.5, style: .continuous))
+            .shadow(color: Color(Theme.shadow).opacity(0.38), radius: 1.5, x: 0, y: 0.5)
+    }
+
+    /// Two fine lines turned into the middle of the bar, where a thumb sits.
+    /// Enough to say the part was machined, far short of the milled grip this
+    /// carried before, which made it the loudest thing on the screen.
+    private var knurl: some View {
+        VStack(spacing: 3.5) {
+            ForEach(0..<2, id: \.self) { _ in
+                Capsule()
+                    .fill(Theme.brassEdge.opacity(0.30))
+                    .frame(width: Self.thumbWidth * 0.52, height: 0.75)
+            }
+        }
     }
 }
 
