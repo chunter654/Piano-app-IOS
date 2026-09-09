@@ -130,125 +130,140 @@ struct RangeSlider: View {
             .frame(width: Self.trackWidth)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-}
-/// The stacked arrangement's range control: a slider showing where its two
-/// octaves sit on the piano.
+}/// The stacked arrangement's range control: the whole piano in miniature, with
+/// the two octaves you are looking at picked out of it.
 ///
-/// The track is the whole instrument and the thumb is the part of it on screen,
-/// which is the same idea the single column uses, so both arrangements answer
-/// "where am I" the same way.
+/// A slider tells you a proportion. This tells you a place. The keys are drawn
+/// where they actually fall, so C is where C is, and the dimmed part keeps the
+/// shape of the instrument visible so you never lose your bearings while moving.
 ///
-/// The window can only rest on one of six Cs, but the thumb glides rather than
-/// snapping, so your finger moves smoothly while the keyboard steps underneath.
-/// On release it settles onto the octave the instrument actually reached: that
-/// is the one moment it must not be left showing a position that is not real.
-///
-/// Note where the thumb stops at the left. The lowest this arrangement goes is
-/// C1, so the bottom three notes of the piano are never in view, and the gap is
-/// the truth rather than a rounding error.
+/// It moves chromatically. The rows no longer always begin on a C, which was a
+/// deliberate property while the arrows stepped by octaves, but there is nothing
+/// left to infer from a label when you can see where you are.
 struct RangeStepBar: View {
 
     @ObservedObject var range: KeyboardRangeController
     let onToggleArrangement: () -> Void
 
-    /// Where the finger has dragged to, as a fraction of the whole piano, or nil
-    /// when the thumb is resting on the octave the keyboard is actually at.
-    @State private var glide: Double?
-    /// Whether this drag began on the thumb. Judged once, as the other slider
-    /// does it, so a touch that misses is ignored for its whole duration.
-    @State private var grabbed: Bool?
+    /// Where the window began when this drag started, and whether the drag began
+    /// on it at all. Judged once, as the other slider does it, so a touch that
+    /// misses is ignored for its whole duration rather than flinging the
+    /// keyboard somewhere by accident.
+    @State private var grabbedFrom: Int?
+    @State private var isJudged = false
 
-    private static let trackThickness: CGFloat = 5
-    private static let thumbThickness: CGFloat = 20
+    private static let stripHeight: CGFloat = 38     // the catch beside it
     private static let catchWidth: CGFloat = 30
     private static let gap: CGFloat = 10
-    private static let grabSlack: CGFloat = 12
+    private static let grabSlack: CGFloat = 10
 
-    private static let lowest = Double(PianoNote.lowest.midi)
-    private static let semitones = Double(PianoNote.highest.midi - PianoNote.lowest.midi)
-
-    /// The share of the piano the two visible octaves take up.
-    private static var thumbShare: Double {
-        Double(KeyboardRangeController.stackedSpan) / semitones
-    }
-
-    /// The two ends of the thumb's travel, in the same fraction.
-    private static var lowestFraction: Double {
-        (Double(KeyboardRangeController.octaveStarts.first ?? 24) - lowest) / semitones
-    }
-    private static var highestFraction: Double {
-        (Double(KeyboardRangeController.octaveStarts.last ?? 84) - lowest) / semitones
-    }
-
-    private var restingFraction: Double {
-        (Double(range.startNote) - Self.lowest) / Self.semitones
-    }
+    private static let lowest = PianoNote.lowest.midi
+    private static let semitones = CGFloat(PianoNote.highest.midi - PianoNote.lowest.midi)
 
     var body: some View {
         HStack(spacing: Self.gap) {
             GeometryReader { geo in
-                let full = geo.size.width
-                let thumbWidth = CGFloat(Self.thumbShare) * full
-                let fraction = glide ?? restingFraction
-
-                ZStack(alignment: .leading) {
-                    Groove(axis: .horizontal)
-                        .frame(height: Self.trackThickness)
-                        .frame(maxHeight: .infinity)
-                    BrassBar(axis: .horizontal, thickness: Self.thumbThickness)
-                        .frame(width: thumbWidth, height: Self.thumbThickness)
-                        .offset(x: CGFloat(fraction) * full)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { value in
-                            if grabbed == nil {
-                                let left = CGFloat(restingFraction) * full
-                                let reach = (left - Self.grabSlack)
-                                    ... (left + thumbWidth + Self.grabSlack)
-                                grabbed = reach.contains(value.startLocation.x)
-                            }
-                            guard grabbed == true, full > 0 else { return }
-                            let moved = Double(value.translation.width / full)
-                            drag(to: restingOrGlideStart + moved)
-                        }
-                        .onEnded { _ in
-                            grabbed = nil
-                            glideStart = nil
-                            // Settle onto the octave the keyboard actually reached.
-                            withAnimation(.easeOut(duration: 0.16)) { glide = nil }
-                        }
-                )
+                let size = geo.size
+                strip(size: size)
+                    .frame(width: size.width, height: Self.stripHeight)
+                    .frame(maxHeight: .infinity)
+                    .contentShape(Rectangle())
+                    .gesture(drag(across: size.width))
             }
             LayoutCatch(mode: range.mode, width: Self.catchWidth,
                         action: onToggleArrangement)
         }
-        .accessibilityElement(children: .contain)
-    }
-
-    /// Where the thumb sat when this drag began, so the movement is relative and
-    /// the thumb stays under the part of it you took hold of.
-    @State private var glideStart: Double?
-
-    private var restingOrGlideStart: Double {
-        if let start = glideStart { return start }
-        return restingFraction
-    }
-
-    private func drag(to proposed: Double) {
-        if glideStart == nil { glideStart = restingFraction }
-        let held = min(max(proposed, Self.lowestFraction), Self.highestFraction)
-        glide = held
-        // The keyboard steps to the nearest octave while the thumb keeps moving,
-        // and each step knocks. That feedback used to come from the two arrows
-        // this slider replaced, and it is worth more here: the thumb glides, so
-        // without it there is nothing to tell you the instrument has moved.
-        let note = Self.lowest + held * Self.semitones
-        if range.setStartNote(Int(note.rounded())) {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        .accessibilityElement()
+        .accessibilityLabel("Keyboard range")
+        .accessibilityValue(range.stackedSpokenName)
+        .accessibilityHint("Swipe up or down to move the keyboard by a semitone")
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: range.setStartNote(range.startNote + 1)
+            case .decrement: range.setStartNote(range.startNote - 1)
+            @unknown default: break
+            }
         }
+    }
+
+    // MARK: - The piano, small
+
+    private func strip(size: CGSize) -> some View {
+        let shape = RoundedRectangle(cornerRadius: 6, style: .continuous)
+        return Canvas { context, canvas in
+            draw(in: context, size: CGSize(width: canvas.width, height: Self.stripHeight))
+        }
+        .background(Theme.keybedColor)
+        .clipShape(shape)
+        .overlay(shape.strokeBorder(Theme.capEdge, lineWidth: 0.75))
+    }
+
+    private func draw(in context: GraphicsContext, size: CGSize) {
+        let whites = KeyboardLayout.whiteMidis
+        let whiteWidth = size.width / CGFloat(whites.count)
+        let window = range.startNote ..< (range.startNote + KeyboardRangeController.stackedSpan)
+
+        for (index, midi) in whites.enumerated() {
+            let rect = CGRect(x: CGFloat(index) * whiteWidth, y: 0,
+                              width: max(0.5, whiteWidth - 0.6), height: size.height)
+            context.fill(Path(rect),
+                         with: .color(window.contains(midi) ? Theme.stripNatural
+                                                            : Theme.stripNaturalDim))
+        }
+
+        let accidentalWidth = whiteWidth * KeyboardLayout.blackThicknessRatio
+        let accidentalHeight = size.height * KeyboardLayout.blackLengthRatio
+        for (index, midi) in whites.enumerated() where index < whites.count - 1 {
+            let sharp = midi + 1
+            guard PianoNote(midi: sharp).isBlack else { continue }
+            let centre = CGFloat(index + 1) * whiteWidth
+            let rect = CGRect(x: centre - accidentalWidth / 2, y: 0,
+                              width: accidentalWidth, height: accidentalHeight)
+            context.fill(Path(rect),
+                         with: .color(window.contains(sharp) ? Theme.stripAccidental
+                                                             : Theme.stripAccidentalDim))
+        }
+
+        // A hairline round the keys in view, drawn to their edges rather than to
+        // the window's exact pitch, so the frame and the lit keys never disagree.
+        let lit = whites.enumerated().filter { window.contains($0.element) }.map(\.offset)
+        if let first = lit.first, let last = lit.last {
+            let frame = CGRect(x: CGFloat(first) * whiteWidth, y: 0,
+                               width: CGFloat(last - first + 1) * whiteWidth - 0.6,
+                               height: size.height)
+            context.stroke(Path(roundedRect: frame.insetBy(dx: 0.5, dy: 0.5), cornerRadius: 2),
+                           with: .color(Theme.brassTextColor.opacity(0.5)), lineWidth: 1)
+        }
+    }
+
+    // MARK: - Moving it
+
+    private func drag(across width: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                guard width > 0 else { return }
+                let perSemitone = width / Self.semitones
+                if !isJudged {
+                    isJudged = true
+                    let left = CGFloat(range.startNote - Self.lowest) * perSemitone
+                    let span = CGFloat(KeyboardRangeController.stackedSpan) * perSemitone
+                    let reach = (left - Self.grabSlack) ... (left + span + Self.grabSlack)
+                    grabbedFrom = reach.contains(value.startLocation.x) ? range.startNote : nil
+                }
+                guard let origin = grabbedFrom else { return }
+                let moved = Int((value.translation.width / perSemitone).rounded())
+                let before = range.startNote
+                if range.setStartNote(origin + moved), (range.startNote % 12) == 0,
+                   before != range.startNote {
+                    // A knock on every C, which is how you would count your way
+                    // along a real keyboard. One per semitone would rattle.
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                }
+            }
+            .onEnded { _ in
+                isJudged = false
+                grabbedFrom = nil
+            }
     }
 }
 

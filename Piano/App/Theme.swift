@@ -173,6 +173,17 @@ enum Theme {
     static let trackBottom = Color(rgb(0.157, 0.110, 0.078))
     static let trackRim = Color(rgb(0.400, 0.310, 0.212, 0.55))
 
+    // MARK: - The strip
+
+    /// The miniature piano in the stacked rail. Keys in view are drawn close to
+    /// the real thing; the rest are dimmed toward the case rather than hidden,
+    /// so the shape of the whole instrument stays legible and you keep your
+    /// bearings while you move.
+    static let stripNatural = Color(rgb(0.930, 0.900, 0.840))
+    static let stripNaturalDim = Color(rgb(0.300, 0.260, 0.220))
+    static let stripAccidental = Color(rgb(0.160, 0.120, 0.090))
+    static let stripAccidentalDim = Color(rgb(0.110, 0.090, 0.070))
+
     // MARK: - Recessed controls
 
     /// The controls are cut into the rail rather than sitting on it. Darker

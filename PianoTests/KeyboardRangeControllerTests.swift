@@ -227,3 +227,42 @@ extension KeyboardRangeControllerTests {
                        KeyboardRangeController.maxVisibleWhiteKeys, accuracy: 0.0001)
     }
 }
+
+// MARK: - The stacked window, moving chromatically
+
+extension KeyboardRangeControllerTests {
+
+    func testTheStackedWindowMovesBySemitone() {
+        let range = makeController()
+        let before = range.startNote
+        XCTAssertTrue(range.setStartNote(before + 1))
+        XCTAssertEqual(range.startNote, before + 1, "it should not snap back to a C")
+    }
+
+    /// Two whole octaves have to keep fitting on the piano, so the window stops
+    /// short at both ends rather than running off it.
+    func testTheStackedWindowStaysOnThePiano() {
+        let range = makeController()
+
+        range.setStartNote(-500)
+        XCTAssertEqual(range.startNote, KeyboardRangeController.minStartNote)
+        XCTAssertEqual(range.lowestStackedNote.name, "A0")
+
+        range.setStartNote(500)
+        XCTAssertEqual(range.startNote, KeyboardRangeController.maxStartNote)
+        XCTAssertEqual(range.highestStackedNote.name, "C8")
+    }
+
+    func testAskingForWhereItAlreadyIsChangesNothing() {
+        let range = makeController()
+        XCTAssertFalse(range.setStartNote(range.startNote))
+    }
+
+    func testTheStackedWindowIsRememberedAcrossLaunches() {
+        let first = makeController()
+        first.setStartNote(54)          // F#3, which no octave step could reach
+
+        let second = makeController()
+        XCTAssertEqual(second.startNote, 54)
+    }
+}
