@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// The catch that switches the keyboard between its two arrangements.
 ///
@@ -21,7 +22,18 @@ struct LayoutCatch: View {
     private static let plateHeight: CGFloat = 38
 
     var body: some View {
-        Button(action: action) {
+        Button {
+            // The tick iOS uses for pickers and segmented controls, rather than
+            // the light knock the octave arrows give. Those nudge along a range;
+            // this lands on one of two states, and the two kinds of action are
+            // worth telling apart by feel as well as by shape.
+            //
+            // Unconditional, unlike the arrows. They stay silent at the ends of
+            // the piano because the press can fail to move anything. A toggle
+            // always toggles.
+            UISelectionFeedbackGenerator().selectionChanged()
+            action()
+        } label: {
             engraving
                 .frame(width: Self.plateWidth, height: Self.plateHeight)
                 // Exactly the width it is given, so the target never hangs over
