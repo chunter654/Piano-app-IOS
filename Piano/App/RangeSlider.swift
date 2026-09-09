@@ -277,18 +277,73 @@ private struct Chevron: Shape {
         return path
     }
 }
+/// The cap every pressable control on the rail wears.
+///
+/// Defined once and worn by both the arrows and the layout catch, because they
+/// are the same object seen twice and the surest way for two controls to stop
+/// matching is to describe them separately.
+///
+/// The face is domed rather than flat: light gathers just above the middle and
+/// falls away, and the bottom inside darkens as the face turns under. The edge
+/// is one even weight the whole way round. A bevel that varies reads as milled
+/// metal, and fading half of it away leaves the shape with no bottom edge, so
+/// you cannot tell where the button ends.
+struct SoftCap: View {
 
-/// The hollow the arrows sit in: a shadow cut into the case, with no edge at
-/// all. An outline would draw the eye to the container rather than the mark,
-/// and the chevron is the part worth looking at.
-private struct ControlRecess: View {
-
-    var cornerRadius: CGFloat = 10
+    var cornerRadius: CGFloat = 9
     var isEnabled: Bool = true
 
     var body: some View {
-        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            .fill(Theme.controlRecess.opacity(isEnabled ? 1 : 0.55))
+        GeometryReader { geo in
+            let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            shape
+                .fill(
+                    LinearGradient(colors: [Theme.capFaceTop, Theme.capFaceBottom],
+                                   startPoint: .top, endPoint: .bottom)
+                )
+                .overlay(
+                    RadialGradient(colors: [Theme.capDome, .clear],
+                                   center: UnitPoint(x: 0.5, y: 0.34),
+                                   startRadius: 1,
+                                   // Scaled to the cap, so the dome sits the same
+                                   // way on the wide arrows as on the narrow catch.
+                                   endRadius: max(geo.size.width, geo.size.height) * 0.62)
+                )
+                .overlay(
+                    LinearGradient(stops: [
+                        .init(color: .clear, location: 0.55),
+                        .init(color: Theme.capUnderside.opacity(0.55), location: 1),
+                    ], startPoint: .top, endPoint: .bottom)
+                )
+                .overlay(shape.strokeBorder(Theme.capEdge, lineWidth: 0.75))
+                .clipShape(shape)
+                .opacity(isEnabled ? 1 : 0.45)
+        }
+    }
+}
+
+/// Draws a cap behind the button and takes it down while it is held.
+///
+/// A button that does not move when pressed never feels soft, however carefully
+/// it is shaded. This is the part that does that work.
+struct SoftCapStyle: ButtonStyle {
+
+    let capSize: CGSize
+    var cornerRadius: CGFloat = 9
+    var isEnabled: Bool = true
+
+    func makeBody(configuration: Configuration) -> some View {
+        let down = configuration.isPressed && isEnabled
+        return configuration.label
+            .background(
+                SoftCap(cornerRadius: cornerRadius, isEnabled: isEnabled)
+                    .frame(width: capSize.width, height: capSize.height)
+                    .brightness(down ? -0.035 : 0)
+                    .shadow(color: Color(Theme.shadow).opacity(down ? 0.3 : 0.5),
+                            radius: down ? 1 : 2.5, x: 0, y: down ? 0.5 : 1.5)
+                    .scaleEffect(down ? 0.97 : 1)
+                    .animation(.easeOut(duration: 0.09), value: down)
+            )
     }
 }
 
@@ -298,6 +353,10 @@ private struct StepButton: View {
     /// joins, because a milled brass chevron has no sharp corners.
     private static let stroke: CGFloat = 1.4
     private static let chevronSize = CGSize(width: 8, height: 15)
+
+    /// Unchanged from when these were bare hollows, so putting a cap on them
+    /// moves nothing else on the rail.
+    private static let capSize = CGSize(width: 46, height: 44)
 
     let pointsLeft: Bool
     let label: String
@@ -314,11 +373,10 @@ private struct StepButton: View {
                                  : Theme.brassTextColor.opacity(0.3))
                 .frame(width: Self.chevronSize.width, height: Self.chevronSize.height)
                 // The target is unchanged; only what is drawn inside it has.
-                .frame(width: 46, height: 44)
-                .background(ControlRecess(isEnabled: isEnabled))
-                .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .frame(width: Self.capSize.width, height: Self.capSize.height)
+                .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SoftCapStyle(capSize: Self.capSize, isEnabled: isEnabled))
         .disabled(!isEnabled)
         .accessibilityLabel(label)
         .accessibilityHint(isEnabled ? "" : "The keyboard is already at the end of the piano")
