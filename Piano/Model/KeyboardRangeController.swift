@@ -30,6 +30,16 @@ final class KeyboardRangeController: ObservableObject {
     static let maxStartNote = PianoNote.highest.midi - stackedSpan + 1    // C#6
     static let defaultStartNote = 48                                      // C3
 
+    /// The stacked arrangement moves an octave at a time, so it only ever rests
+    /// on a C. Those are the positions where two whole octaves still fit on the
+    /// piano: C1 through C6.
+    static let octaveStarts: [Int] = stride(from: 0, through: 127, by: 12)
+        .filter { $0 >= minStartNote && $0 <= maxStartNote }
+
+    /// The nearest octave position to an arbitrary note.
+    static func nearestOctaveStart(to note: Int) -> Int {
+        octaveStarts.min(by: { abs($0 - note) < abs($1 - note) }) ?? defaultStartNote
+    }
 
     /// Position 0 puts A0 at the top; this is as far down the piano as the
     /// single column can travel before C8 reaches the bottom. It shrinks as the
@@ -99,7 +109,7 @@ final class KeyboardRangeController: ObservableObject {
         }
 
         if let savedStart = defaults.object(forKey: Self.startNoteKey) as? Int {
-            startNote = min(max(savedStart, Self.minStartNote), Self.maxStartNote)
+            startNote = Self.nearestOctaveStart(to: savedStart)
         } else {
             startNote = Self.defaultStartNote
         }
@@ -126,6 +136,9 @@ final class KeyboardRangeController: ObservableObject {
 
     // MARK: - Stacked arrangement
 
+    var canStepDown: Bool { startNote > (Self.octaveStarts.first ?? startNote) }
+    var canStepUp: Bool { startNote < (Self.octaveStarts.last ?? startNote) }
+
     var lowestStackedNote: PianoNote { PianoNote(midi: startNote) }
     var highestStackedNote: PianoNote { PianoNote(midi: startNote + Self.stackedSpan - 1) }
 
@@ -138,18 +151,25 @@ final class KeyboardRangeController: ObservableObject {
         "\(lowestStackedNote.spokenName) to \(highestStackedNote.spokenName)"
     }
 
-    /// Moves the window, clamped so two whole octaves still fit on the piano.
-    ///
-    /// Chromatic, not octave-stepped. The rows no longer always begin on a C,
-    /// which was a deliberate property once, but the strip above the keyboard
-    /// shows where you are, so there is nothing left to infer from a label.
+    /// Always lands on an octave position, wherever it is asked to go.
     @discardableResult
     func setStartNote(_ value: Int) -> Bool {
-        let held = min(max(value, Self.minStartNote), Self.maxStartNote)
-        guard held != startNote else { return false }
-        startNote = held
-        defaults.set(held, forKey: Self.startNoteKey)
+        let snapped = Self.nearestOctaveStart(to: value)
+        guard snapped != startNote else { return false }
+        startNote = snapped
+        defaults.set(snapped, forKey: Self.startNoteKey)
         return true
+    }
+
+    /// One octave at a time, which is what the arrows do.
+    @discardableResult
+    func stepOctave(_ delta: Int) -> Bool {
+        guard let index = Self.octaveStarts.firstIndex(of: startNote) else {
+            return setStartNote(startNote)
+        }
+        let target = index + delta
+        guard Self.octaveStarts.indices.contains(target) else { return false }
+        return setStartNote(Self.octaveStarts[target])
     }
 
     /// How far along the piano the viewport is, 0 to 1. Drives the slider.

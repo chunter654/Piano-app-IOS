@@ -28,23 +28,10 @@ true measure rather than a decorative handle.
 The pinch lives on the slider rather than on the keys because the keyboard
 tracks every finger separately to make chords and sliding work, and a pinch
 there would be read as two notes.
+
 **Stacked.** Two rows of a conventional keyboard, one octave each, with the
-lower octave on top. Above them sits the whole piano in miniature, with the two
-octaves you are looking at picked out of it and the rest dimmed toward the case.
-Drag it to move. A slider tells you a proportion; this tells you a place, so C
-is where C is and the shape of the instrument stays visible while you move.
-
-It moves chromatically, a semitone at a time, and knocks each time it crosses a
-C. The rows therefore do not always begin on a C, which was a deliberate
-property while the arrows stepped by octaves, but there is nothing left to infer
-from a label when you can see where you are.
-
-The strip cannot glide the way the single column does, and the reason is
-structural rather than an unfinished edge. The single column is one unbroken run
-of keys with the screen as a window onto it, so nothing has to break. Two rows
-wrap that run, and wrapping has to break somewhere: either on a key boundary,
-which is stepping, or mid-key, which slices a key in half across the two rows.
-Stepping was the better of the two.
+lower octave on top. The chevrons either side of the range move a whole octave
+at a time, so the rows always start on a C.
 
 Neither arrangement is drawn from a stored layout. Both are generated from a
 starting MIDI note, so any range of the piano can be shown and nothing has to
@@ -102,8 +89,8 @@ xcodebuild -project Piano.xcodeproj -scheme Piano \
   -destination 'platform=iOS Simulator,name=iPhone 16 Pro' test
 ```
 
-There are 44 of them, covering the layout maths, the range controller, the zoom
-limits, chromatic movement, and note naming. They are pure model tests with no UI, so they are quick.
+There are 40 of them, covering the layout maths, the range controller, the zoom
+limits, and note naming. They are pure model tests with no UI, so they are quick.
 
 ### Running on a real iPhone
 
