@@ -10,7 +10,9 @@ bought by someone who wants a piano, not a feature list, so everything that is
 not the promise, the two views, or the credit has been left out. Keeping it
 here makes that a decision rather than an oversight.
 
-The views are listed in the order you meet them: the app opens on Vertical.
+Vertical is listed first by choice, not because it is the default. The app
+opens on Wide, so the order is a judgement about which view to lead with rather
+than a description of what happens.
 
 The app is priced at $1.99 with nothing to buy inside it.
 

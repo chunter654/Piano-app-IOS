@@ -1,3 +1,4 @@
+import SwiftUI
 import UIKit
 
 // The app icon, drawn from the app's own code.
@@ -36,6 +37,15 @@ struct Variant {
     let top: CGFloat
     let bottom: CGFloat
     let ornament: Ornament
+    /// How much to lift the brass out of the app's palette, as a multiplier on
+    /// its saturation and brightness. One leaves it exactly as the app wears
+    /// it, which is tarnished on purpose: on screen it sits on dark walnut at
+    /// arm's length. The icon sits at sixty points on somebody else's
+    /// wallpaper, and needs more.
+    let brassLift: CGFloat
+    /// A bright line along the top of the bar, where a turned edge would
+    /// catch the light.
+    let brassSpecular: Bool
     /// The top of the band the brass is centred in, as a fraction of the side.
     /// Zero centres the brass between the keyboard and the top edge of the
     /// image. A larger value centres it in the case you can actually see,
@@ -58,8 +68,9 @@ struct Variant {
 // last black key is sliced in half by the edge of the keyboard. A full octave
 // from C does. Most other counts do not.
 let icon = Variant(whiteKeys: 7, startNote: 60,
-                   side: 0.075, top: 0.30, bottom: 0.10,
-                   ornament: .bar(length: 0.66), ornamentTop: 0)
+                   side: 0.075, top: 0.30, bottom: 0.068,
+                   ornament: .bar(length: 0.66),
+                   brassLift: 1.25, brassSpecular: true, ornamentTop: 0)
 
 /// White keys first and accidentals after, which is also the drawing order.
 func transposedFrames(_ v: Variant, keyboard: CGRect) -> [KeyFrame] {
@@ -148,12 +159,28 @@ func drawCase(_ cg: CGContext) {
 /// Lit across its short axis and edged with the same brass line the catch and
 /// the slider thumb both wear. Every colour is the app's own; none was invented
 /// for the icon.
+/// A colour from the app's palette, lifted for the icon.
+///
+/// Saturation and brightness both rise, because gold that is only brighter
+/// goes pale rather than golden. Hue is left alone: the colour has to stay the
+/// brass the app wears, or the icon stops matching the thing it opens.
+func lifted(_ color: Color, by lift: CGFloat) -> CGColor {
+    let ui = UIColor(color)
+    var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+    ui.getHue(&h, saturation: &s, brightness: &b, alpha: &a)
+    guard lift != 1 else { return ui.cgColor }
+    return UIColor(hue: h,
+                   saturation: min(1, s * (1 + (lift - 1) * 0.6)),
+                   brightness: min(1, b * lift),
+                   alpha: a).cgColor
+}
+
 func drawOrnament(_ cg: CGContext, _ v: Variant, above keyboard: CGRect) {
     guard case let .bar(length) = v.ornament else { return }
 
     let space = CGColorSpaceCreateDeviceRGB()
     let midY = (side * v.ornamentTop + keyboard.minY) / 2
-    let height = side * 0.050
+    let height = side * (v.brassLift >= 1.5 ? 0.058 : 0.050)
     let rect = CGRect(x: (side - side * length) / 2, y: midY - height / 2,
                       width: side * length, height: height)
     let path = UIBezierPath(roundedRect: rect, cornerRadius: height / 2)
@@ -165,10 +192,10 @@ func drawOrnament(_ cg: CGContext, _ v: Variant, above keyboard: CGRect) {
     cg.addPath(path.cgPath)
     cg.clip()
     let face = CGGradient(colorsSpace: space,
-                          colors: [UIColor(Theme.brassShadow).cgColor,
-                                   UIColor(Theme.brassHighlight).cgColor,
-                                   UIColor(Theme.brassMid).cgColor,
-                                   UIColor(Theme.brassShadow).cgColor] as CFArray,
+                          colors: [lifted(Theme.brassShadow, by: v.brassLift),
+                                   lifted(Theme.brassHighlight, by: v.brassLift),
+                                   lifted(Theme.brassMid, by: v.brassLift),
+                                   lifted(Theme.brassShadow, by: v.brassLift)] as CFArray,
                           locations: [0, 0.30, 0.66, 1])!
     cg.drawLinearGradient(face,
                           start: CGPoint(x: rect.midX, y: rect.minY),
@@ -188,9 +215,25 @@ func drawOrnament(_ cg: CGContext, _ v: Variant, above keyboard: CGRect) {
     cg.endTransparencyLayer()
     cg.restoreGState()
 
+    if v.brassSpecular {
+        // Where a turned edge would catch the light: inside the bar, along the
+        // top, and stopped short of the ends so it reads as a highlight on a
+        // curved face rather than as a second bar.
+        let line = CGRect(x: rect.minX + rect.height * 0.9,
+                          y: rect.minY + rect.height * 0.22,
+                          width: rect.width - rect.height * 1.8,
+                          height: max(1, rect.height * 0.10))
+        cg.saveGState()
+        cg.addPath(UIBezierPath(roundedRect: line,
+                                cornerRadius: line.height / 2).cgPath)
+        cg.setFillColor(UIColor.white.withAlphaComponent(0.22).cgColor)
+        cg.fillPath()
+        cg.restoreGState()
+    }
+
     cg.saveGState()
     cg.addPath(path.cgPath)
-    cg.setStrokeColor(UIColor(Theme.capEdge).cgColor)
+    cg.setStrokeColor(lifted(Theme.capEdge, by: v.brassLift).copy(alpha: 0.46 * min(1.6, v.brassLift))!)
     cg.setLineWidth(height * 0.06)
     cg.strokePath()
     cg.restoreGState()
@@ -208,6 +251,7 @@ func draw(_ v: Variant) -> UIImage {
         let cg = context.cgContext
         drawCase(cg)
 
+        // A negative bottom margin runs the keys off the edge of the image.
         let keyboard = CGRect(x: side * v.side,
                               y: side * v.top,
                               width: side * (1 - v.side * 2),

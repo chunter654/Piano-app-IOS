@@ -14,10 +14,12 @@ in the project, the store name is a field in App Store Connect.
 A brass catch at the top right switches between them, and the choice is
 remembered.
 
-A first launch opens on the stacked rows. They ask nothing of a new user: the
-phone is already in the right position and the heading names the range, where
-the single column has to be worked out first. Since the choice is remembered,
-anyone who prefers the column meets that default once.
+A first launch opens on the single column. It was the stacked rows for a
+while, on the argument that they ask nothing of a newcomer, and that argument
+is still true. The column won anyway: it is the instrument this app is for,
+with the whole piano under the slider, and opening on the smaller arrangement
+sells it short. Either way the cost is one launch, because the choice is
+remembered.
 
 **Single column.** The instrument is turned a quarter turn clockwise. Pitch
 runs down the screen, the key fronts face left, and the accidentals reach in

@@ -31,14 +31,18 @@ final class KeyboardRangeController: ObservableObject {
 
     /// What a first launch opens on, before anyone has chosen.
     ///
-    /// The stacked rows, because they ask nothing of you: the phone is already
-    /// in the right hand position, the keys point the way keys point, and the
-    /// heading names the range. The single column has to be worked out first,
-    /// since nothing on screen says to turn the phone and the rotated note
-    /// names only make sense once you have. That choice is remembered from the
-    /// first tap of the catch, so anyone who prefers the column meets this
-    /// exactly once.
-    static let defaultMode: KeyboardLayoutMode = .twoRow
+    /// The single column. This was the stacked rows for a while, on the
+    /// argument that they ask nothing of a newcomer: the phone is already in
+    /// the right position and the heading names the range, where the column
+    /// has to be worked out first because nothing on screen says to turn the
+    /// phone. That argument is still true, and it lost anyway. The column is
+    /// the instrument this app is for, with the whole piano under the slider
+    /// and both hands on the keys, and opening on the smaller arrangement
+    /// sells the app short to the people most likely to keep it.
+    ///
+    /// Either way the cost is one launch: the choice is remembered from the
+    /// first tap of the catch.
+    static let defaultMode: KeyboardLayoutMode = .single
 
     /// Semitones the stacked arrangement shows: two whole octaves.
     static let stackedSpan = KeyboardLayout.semitonesPerOctave * 2
