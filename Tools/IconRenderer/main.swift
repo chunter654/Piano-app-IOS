@@ -66,17 +66,13 @@ struct Variant {
 // and the slider drawn as a thumb in a routed channel, are in this file's
 // history rather than kept here as dead options.
 //
-// The margins are not free. iOS masks an icon with a corner radius of about
-// 0.2237 of the side, and at the keyboard's own inset that arc reaches 0.065
-// of the side in from the bottom edge. Anything closer than that has its
-// corners eaten, so the bottom margin is 0.10 and the keyboard keeps clear.
+// The margins are not free: the corner mask eats anything sitting too close to
+// an edge, and how close is too close depends on the mask's own curve, which
+// is measured further down rather than guessed.
 //
 // The window has to end on a white key with no accidental above it, or the
 // last black key is sliced in half by the edge of the keyboard. A full octave
 // from C does. Most other counts do not.
-/// The mask iOS puts over every icon, as a fraction of the side.
-let maskCorner: CGFloat = 0.2237
-
 /// One inset for the sides and the bottom, so the band of wood round the
 /// keyboard is the same width on all three visible sides rather than nearly
 /// the same. It is also what the bottom corners' radius is measured from, and
@@ -84,8 +80,8 @@ let maskCorner: CGFloat = 0.2237
 /// the corner stay in agreement.
 ///
 /// 0.072 is between the two the icon used before, which keeps the keys as
-/// close to the size they were as an even margin allows. It also clears the
-/// mask: the arc reaches 0.065 in from the bottom edge at this inset.
+/// close to the size they were as an even margin allows, and it clears the
+/// mask at every point.
 let keyboardInset: CGFloat = 0.072
 
 let icon = Variant(whiteKeys: 7, startNote: 60,
@@ -95,9 +91,25 @@ let icon = Variant(whiteKeys: 7, startNote: 60,
                    caseLift: 1.25,
                    ornamentTop: 0)
 
-/// How square the corner curve is. Five is close to the curve iOS uses to mask
-/// an icon, which is not a circular arc.
-let cornerSquareness: CGFloat = 5
+/// The icon mask, measured rather than assumed.
+///
+/// These two numbers describe the curve iOS masks an icon with, as a
+/// superellipse: |x/r|^k + |y/r|^k = 1. They were fitted to the silhouette of
+/// a solid-coloured system icon lifted off a real home screen, and the fit is
+/// good to about half a pixel on a 179 pixel icon.
+///
+/// They are worth measuring because guessing them goes wrong quietly. An
+/// earlier version of this file used k = 5 and r = 0.224 on the reasoning that
+/// Apple's shape is a squircle and a squircle has a high exponent. It does
+/// not: k below 2 cuts the corner more deeply than a circle would, and k = 5
+/// hugs the square so tightly that the icon reads as visibly squarer than the
+/// ones beside it. That was caught by eye on a phone, not by any of this code.
+///
+/// Measured on iOS 18.3, which is the only runtime this Mac can install. iOS
+/// 26 changed the icon shape, so these want re-fitting against a screenshot
+/// from a current phone.
+let maskCorner: CGFloat = 0.183
+let cornerSquareness: CGFloat = 1.7
 
 /// One quarter of the icon mask, sampled.
 ///

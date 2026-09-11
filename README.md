@@ -95,27 +95,32 @@ else's wallpaper. Repaint it with any simulator booted:
 Tools/IconRenderer/render.sh
 ```
 
-The margins in it are not arbitrary. iOS masks an icon with a corner radius of
-about 0.2237 of the side, and at the keyboard's own inset that arc reaches
-0.065 of the side in from the bottom edge, so anything closer loses the corners
-of the outer keys.
+The margins in it are not arbitrary. The corner mask eats anything sitting too
+close to an edge, and the keyboard is inset to clear it.
+
+The mask's own curve is measured rather than assumed. It is fitted to the
+silhouette of a solid-coloured system icon lifted off a real home screen: a
+superellipse of radius 0.183 of the side and exponent 1.7, good to about half a
+pixel on a 179 pixel icon. Guessing it went wrong quietly once already. An
+earlier version used exponent 5 on the reasoning that Apple's shape is a
+squircle and a squircle has a high exponent, when in fact an exponent below 2
+cuts the corner more deeply than a circle and 5 hugs the square, which made the
+icon read as visibly squarer than its neighbours.
+
+Those numbers come from iOS 18.3, the only runtime this Mac can install. iOS 26
+changed the icon shape, so they want re-fitting against a screenshot from a
+current phone.
 
 One inset does the sides and the bottom, so that band of wood is the same
 width on all three visible sides.
 
 The keybed's own outline is that same inset applied to the mask itself rather
 than a rounded rectangle. It is built by walking the mask's curve and stepping
-inwards along the normal at every point, which is the only shape whose
-distance from the mask is constant. A rounded rectangle is not: a circular
-corner against the mask's curve opened the band from 82 pixels at the sides to
-126 through the corner, and even a superellipse of the same radius opens it by
-about a fifth on the diagonal.
-
-Two things follow from that. The band of wood keeps its width all the way
-round, so the keyboard reads as set into the case rather than laid on top of
-it. And the curve arrives at the straight edges with its curvature run down to
-nothing, where a circular arc meets them with a step the eye reads as a
-crease.
+inwards along the normal at every point, which is the only shape whose distance
+from the mask is constant; a rounded rectangle of any radius diverges from it
+somewhere in the corner. The band of wood therefore keeps its width all the way
+round, and the keyboard reads as set into the case rather than laid on top of
+it.
 
 The top corners stay square. A keybed routed into a case is open at the back,
 not a closed panel.
