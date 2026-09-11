@@ -17,17 +17,28 @@ The app is priced at $1.99 with nothing to buy inside it.
 Field limits are Apple's. `Tools/check-listing.sh` measures them and fails if
 the credit goes missing.
 
+The subtitle carries search terms rather than the promise. It is indexed, and a
+term there ranks above the same term in the keywords field, so it is the
+strongest text after the name; the promise is already the description's first
+line, which is what shows under the icon before anyone taps More. Grand, piano
+and keyboard are therefore absent from the keywords, where they would only be
+repeating the subtitle at a lower weight.
+
+It reads as a phrase rather than a comma-separated list on purpose. Apple's
+metadata review treats a subtitle that is only a keyword list as keyword
+stuffing.
+
 ## Name (30)
 
 Minimalist Piano
 
 ## Subtitle (30)
 
-No ads, pop-ups or purchases
+Grand piano keyboard, no ads
 
 ## Keywords (100)
 
-piano,keyboard,grand,keys,octave,chords,scales,practice,notes,acoustic,music,play,instrument
+keys,octave,chords,scales,practice,notes,acoustic,music,play,instrument,88,offline,melody,touch
 
 ## Description (4000)
 
