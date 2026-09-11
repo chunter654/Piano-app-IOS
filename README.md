@@ -20,7 +20,7 @@ from the right. The note names turn with it, so tilting the phone reads them
 upright. A brass slider down the right scrolls a viewport across the whole
 88-key piano. The viewport moves continuously rather than in steps, which is
 what makes the travel feel smooth; the keys themselves never move relative to
-one another. Pinching that same slider zooms, between eight and thirty-two
+one another. Pinching that same slider zooms, between eight and twenty-four
 white keys on screen, holding the middle of the view still. The thumb is sized
 from the fraction of the piano in view, so it shrinks as you zoom in and is a
 true measure rather than a decorative handle.

@@ -18,8 +18,16 @@ final class KeyboardRangeController: ObservableObject {
 
     /// Closer in than this and barely an octave is reachable; wider out and the
     /// keys are narrower than a fingertip and stop being playable.
+    ///
+    /// The keyboard column is about 126mm long, so these limits are key widths
+    /// of roughly 16mm and 5mm against an acoustic piano's 23.5mm. Past about
+    /// twenty-one keys two neighbours fall under one fingertip and single notes
+    /// stop being targetable, so the far end is a wide view rather than a
+    /// playable one, and there is no reason to extend it much further. Zooming
+    /// out was never how you find your place either: the slider travels all 88
+    /// keys at any zoom.
     static let minVisibleWhiteKeys: Double = 8
-    static let maxVisibleWhiteKeys: Double = 32
+    static let maxVisibleWhiteKeys: Double = 24
 
     /// Semitones the stacked arrangement shows: two whole octaves.
     static let stackedSpan = KeyboardLayout.semitonesPerOctave * 2
