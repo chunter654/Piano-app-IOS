@@ -95,7 +95,7 @@ let icon = Variant(whiteKeys: 7, startNote: 60,
                    ornament: .bar(length: 0.52),
                    brassLift: 1.25, brassSpecular: true,
                    caseLift: 1.25,
-                   keybedTop: 0.12,
+                   keybedTop: 0,
                    ornamentTop: 0)
 
 /// The icon mask, measured rather than assumed.

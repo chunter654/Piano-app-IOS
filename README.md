@@ -124,10 +124,11 @@ round, and the keyboard reads as set into the case rather than laid on top of
 it.
 
 The keybed's back corners are the one pair the mask has no say over, since no
-edge of the icon is near them. They are rounded too, at 0.12 of the side, so
-nothing in the icon has a sharp corner. Square was the more literal choice, a
-keybed routed into a case being open at the back, and it lost to matching the
-roundness of everything around it.
+edge of the icon is near them, and they stay square. A keybed routed into a
+case is open at the back rather than being a closed panel, and rounding them
+made the keyboard read as a lozenge sitting on the wood instead of a bed cut
+into it. The renderer takes the radius as a number, so they are one edit from
+round if that judgement changes.
 
 The mask is a superellipse, not a circular rounded rectangle, and
 `Tools/IconPreview` exists because getting that wrong in a preview hides
