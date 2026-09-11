@@ -10,6 +10,8 @@ bought by someone who wants a piano, not a feature list, so everything that is
 not the promise, the two views, or the credit has been left out. Keeping it
 here makes that a decision rather than an oversight.
 
+The views are listed in the order you meet them: the app opens on Vertical.
+
 The app is priced at $1.99 with nothing to buy inside it.
 
 Field limits are Apple's. `Tools/check-listing.sh` measures them and fails if
@@ -35,8 +37,8 @@ music or any other app.
 Features
 
 Two piano views
-Wide — 88 keys with adjustable key size; pinch the control bar to zoom.
 Vertical — two octaves with simple octave navigation.
+Wide — 88 keys with adjustable key size; pinch the control bar to zoom.
 
 Piano sound: Salamander Grand Piano by Alexander Holm, licensed under Creative
 Commons Attribution 3.0.
