@@ -10,8 +10,8 @@ let masked = CGContext(data: nil, width: 1024, height: 1024, bitsPerComponent: 8
                        bytesPerRow: 0, space: cs,
                        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
 // The real mask is a continuous curve, not a circular arc.
-let r = side * 0.183      // measured, not assumed: see Tools/IconRenderer
-let n: CGFloat = 1.7
+let r = side * 0.309      // measured off an iOS 26 home screen
+let n: CGFloat = 2.6
 let steps = 160
 let mp = CGMutablePath()
 let rect = CGRect(x: 0, y: 0, width: side, height: side)

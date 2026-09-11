@@ -36,8 +36,8 @@ func masked(_ cg: CGImage, side: CGFloat, smooth: Bool) -> CGImage {
     let rect = CGRect(x: 0, y: 0, width: side, height: side)
     // iOS masks an icon with a continuous curve, not a circular arc. A circular
     // preview mask makes the band round the corner look even when it is not.
-    let r = side * 0.183      // measured, not assumed: see Tools/IconRenderer
-    let n: CGFloat = 1.7
+    let r = side * 0.309      // measured off an iOS 26 home screen
+    let n: CGFloat = 2.6
     let steps = 128
     let path = CGMutablePath()
     func corner(_ centre: CGPoint, _ ax: CGPoint, _ ay: CGPoint) {

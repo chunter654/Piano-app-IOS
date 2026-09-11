@@ -53,6 +53,12 @@ struct Variant {
     /// wallpaper is behind it, where the app's own case only ever has to sit
     /// under your hands in a lit room.
     let caseLift: CGFloat
+    /// How far the back corners of the keybed are rounded, as a fraction of the
+    /// side. Zero is square.
+    ///
+    /// These are the one pair of corners here the mask has no say over, since
+    /// no edge of the icon is near them.
+    let keybedTop: CGFloat
     /// The top of the band the brass is centred in, as a fraction of the side.
     /// Zero centres the brass between the keyboard and the top edge of the
     /// image. A larger value centres it in the case you can actually see,
@@ -89,27 +95,27 @@ let icon = Variant(whiteKeys: 7, startNote: 60,
                    ornament: .bar(length: 0.52),
                    brassLift: 1.25, brassSpecular: true,
                    caseLift: 1.25,
+                   keybedTop: 0.12,
                    ornamentTop: 0)
 
 /// The icon mask, measured rather than assumed.
 ///
 /// These two numbers describe the curve iOS masks an icon with, as a
-/// superellipse: |x/r|^k + |y/r|^k = 1. They were fitted to the silhouette of
-/// a solid-coloured system icon lifted off a real home screen, and the fit is
-/// good to about half a pixel on a 179 pixel icon.
+/// superellipse: |x/r|^k + |y/r|^k = 1. They are fitted to the silhouette of a
+/// solid-coloured icon lifted off a real home screen, and the fit is good to
+/// under half a pixel on a 189 pixel icon.
 ///
-/// They are worth measuring because guessing them goes wrong quietly. An
-/// earlier version of this file used k = 5 and r = 0.224 on the reasoning that
-/// Apple's shape is a squircle and a squircle has a high exponent. It does
-/// not: k below 2 cuts the corner more deeply than a circle would, and k = 5
-/// hugs the square so tightly that the icon reads as visibly squarer than the
-/// ones beside it. That was caught by eye on a phone, not by any of this code.
+/// Measuring them matters twice over. Guessing goes wrong quietly: an earlier
+/// version used k = 5 and r = 0.224 on the reasoning that Apple's shape is a
+/// squircle and a squircle has a high exponent, which made the icon read as
+/// visibly squarer than its neighbours. And the shape is not fixed across
+/// versions: iOS 18.3 measures 0.183 and 1.7, iOS 26 measures 0.309 and 2.6,
+/// which is a great deal rounder. The keybed is cut as an offset of this
+/// curve, so which version the numbers come from changes the drawing.
 ///
-/// Measured on iOS 18.3, which is the only runtime this Mac can install. iOS
-/// 26 changed the icon shape, so these want re-fitting against a screenshot
-/// from a current phone.
-let maskCorner: CGFloat = 0.183
-let cornerSquareness: CGFloat = 1.7
+/// These are iOS 26, which is what the app ships to.
+let maskCorner: CGFloat = 0.309
+let cornerSquareness: CGFloat = 2.6
 
 /// One quarter of the icon mask, sampled.
 ///
@@ -138,7 +144,7 @@ func maskCornerPoints(centre: CGPoint, radius: CGFloat,
 /// is that the band of wood round the keyboard is the same width at the sides,
 /// at the bottom, and through the corners, which is what the eye is actually
 /// measuring.
-func keybedPath(inset d: CGFloat, top: CGFloat) -> CGPath {
+func keybedPath(inset d: CGFloat, top: CGFloat, topRadius: CGFloat = 0) -> CGPath {
     let radius = side * maskCorner
     let steps = 256
     let path = CGMutablePath()
@@ -165,8 +171,19 @@ func keybedPath(inset d: CGFloat, top: CGFloat) -> CGPath {
     let rightCentre = CGPoint(x: side - radius, y: side - radius)
     let leftCentre = CGPoint(x: radius, y: side - radius)
 
-    path.move(to: CGPoint(x: d, y: top))
-    path.addLine(to: CGPoint(x: side - d, y: top))
+    // The back of the keybed, whose corners are the one thing here not set by
+    // the mask: nothing of the icon's edge is near them.
+    let t = topRadius
+    path.move(to: CGPoint(x: d + t, y: top))
+    path.addLine(to: CGPoint(x: side - d - t, y: top))
+    if t > 0 {
+        for point in maskCornerPoints(centre: CGPoint(x: side - d - t, y: top + t),
+                                      radius: t,
+                                      ax: CGPoint(x: 0, y: -1),
+                                      ay: CGPoint(x: 1, y: 0), steps: 96) {
+            path.addLine(to: point)
+        }
+    }
     path.addLine(to: CGPoint(x: side - d, y: side - radius))
     for point in offset(maskCornerPoints(centre: rightCentre, radius: radius,
                                          ax: CGPoint(x: 1, y: 0),
@@ -181,7 +198,17 @@ func keybedPath(inset d: CGFloat, top: CGFloat) -> CGPath {
                         towards: leftCentre) {
         path.addLine(to: point)
     }
-    path.addLine(to: CGPoint(x: d, y: top))
+    if t > 0 {
+        path.addLine(to: CGPoint(x: d, y: top + t))
+        for point in maskCornerPoints(centre: CGPoint(x: d + t, y: top + t),
+                                      radius: t,
+                                      ax: CGPoint(x: -1, y: 0),
+                                      ay: CGPoint(x: 0, y: -1), steps: 96) {
+            path.addLine(to: point)
+        }
+    } else {
+        path.addLine(to: CGPoint(x: d, y: top))
+    }
     path.closeSubpath()
     return path
 }
@@ -388,21 +415,25 @@ func draw(_ v: Variant) -> UIImage {
         // The keybed sits a hairline outside where the keys are clipped, so a
         // line of it follows the curve and no key runs straight into the wood.
         let lip = side * 0.009
-        let bed = keybedPath(inset: side * v.side - lip, top: keyboard.minY - lip)
+        let bed = keybedPath(inset: side * v.side - lip, top: keyboard.minY - lip,
+                             topRadius: side * v.keybedTop + lip)
         cg.addPath(bed)
         cg.setFillColor(Theme.keybed.cgColor)
         cg.fillPath()
         // The bead of light along the top edge of the routed keybed.
         cg.setFillColor(Theme.caseHighlight.cgColor)
-        cg.fill(CGRect(x: side * v.side - lip, y: keyboard.minY - lip - 3,
-                       width: side * (1 - v.side * 2) + lip * 2, height: 3))
+        cg.fill(CGRect(x: side * v.side - lip + side * v.keybedTop,
+                       y: keyboard.minY - lip - 3,
+                       width: side * (1 - v.side * 2) + lip * 2 - side * v.keybedTop * 2,
+                       height: 3))
 
         drawOrnament(cg, v, above: keyboard)
 
         // Everything past the window belongs to the rest of the piano, which
         // the layout hands back along with the visible keys.
         cg.saveGState()
-        cg.addPath(keybedPath(inset: side * v.side, top: keyboard.minY))
+        cg.addPath(keybedPath(inset: side * v.side, top: keyboard.minY,
+                              topRadius: side * v.keybedTop))
         cg.clip()
 
         let frames = transposedFrames(v, keyboard: keyboard)

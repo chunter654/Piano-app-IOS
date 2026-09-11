@@ -99,17 +99,18 @@ The margins in it are not arbitrary. The corner mask eats anything sitting too
 close to an edge, and the keyboard is inset to clear it.
 
 The mask's own curve is measured rather than assumed. It is fitted to the
-silhouette of a solid-coloured system icon lifted off a real home screen: a
-superellipse of radius 0.183 of the side and exponent 1.7, good to about half a
-pixel on a 179 pixel icon. Guessing it went wrong quietly once already. An
-earlier version used exponent 5 on the reasoning that Apple's shape is a
-squircle and a squircle has a high exponent, when in fact an exponent below 2
-cuts the corner more deeply than a circle and 5 hugs the square, which made the
-icon read as visibly squarer than its neighbours.
+silhouette of a solid-coloured icon lifted off a real home screen: a
+superellipse of radius 0.309 of the side and exponent 2.6, good to under half a
+pixel on a 189 pixel icon.
 
-Those numbers come from iOS 18.3, the only runtime this Mac can install. iOS 26
-changed the icon shape, so they want re-fitting against a screenshot from a
-current phone.
+Measuring it matters twice over. Guessing goes wrong quietly, and an earlier
+version used exponent 5 and radius 0.224 on the reasoning that Apple's shape is
+a squircle and a squircle has a high exponent, which made the icon read as
+visibly squarer than its neighbours. And the shape is not fixed across
+versions: iOS 18.3 measures 0.183 and 1.7 against iOS 26's 0.309 and 2.6, a
+great deal rounder. Since the keybed is cut as an offset of this curve, which
+version the numbers come from changes the drawing. They are iOS 26's, which is
+what the app ships to; re-fit them when Apple changes the shape again.
 
 One inset does the sides and the bottom, so that band of wood is the same
 width on all three visible sides.
@@ -122,8 +123,11 @@ somewhere in the corner. The band of wood therefore keeps its width all the way
 round, and the keyboard reads as set into the case rather than laid on top of
 it.
 
-The top corners stay square. A keybed routed into a case is open at the back,
-not a closed panel.
+The keybed's back corners are the one pair the mask has no say over, since no
+edge of the icon is near them. They are rounded too, at 0.12 of the side, so
+nothing in the icon has a sharp corner. Square was the more literal choice, a
+keybed routed into a case being open at the back, and it lost to matching the
+roundness of everything around it.
 
 The mask is a superellipse, not a circular rounded rectangle, and
 `Tools/IconPreview` exists because getting that wrong in a preview hides
