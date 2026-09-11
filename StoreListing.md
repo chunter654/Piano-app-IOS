@@ -12,6 +12,10 @@ here makes that a decision rather than an oversight.
 
 The views are listed in the order you meet them: the app opens on Wide.
 
+The line names the button because the catch is a small brass square with an
+abstract engraving on it. Someone who never finds it concludes the app has one
+view, and the description is the only place we get to say otherwise.
+
 The app is priced at $1.99 with nothing to buy inside it.
 
 Field limits are Apple's. `Tools/check-listing.sh` measures them and fails if
@@ -47,7 +51,7 @@ music or any other app.
 
 Features
 
-Two piano views
+Two piano views, switched by the brass button in the top corner
 Wide — 88 keys with adjustable key size; pinch the control bar to zoom.
 Vertical — two octaves with simple octave navigation.
 
