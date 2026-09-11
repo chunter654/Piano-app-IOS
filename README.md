@@ -100,11 +100,15 @@ about 0.2237 of the side, and at the keyboard's own inset that arc reaches
 0.065 of the side in from the bottom edge, so anything closer loses the corners
 of the outer keys.
 
-That same radius sets the keybed's bottom corners. Theirs is the mask's radius
-less the keyboard's inset, which makes the two curves concentric: the band of
-wood between the keybed and the edge of the icon keeps its width all the way
-round the corner, and the keyboard reads as set into the case rather than laid
-on top of it.
+One inset does the sides and the bottom, so that band of wood is the same
+width on all three visible sides. It also sets the keybed's bottom corners:
+their radius is the mask's radius less that inset, which makes the two curves
+concentric, so the band keeps its width all the way round the corner and the
+keyboard reads as set into the case rather than laid on top of it. One number
+feeds the margin and the corner, and changing it keeps them in agreement.
+
+The top corners stay square. A keybed routed into a case is open at the back,
+not a closed panel.
 
 ## Building
 

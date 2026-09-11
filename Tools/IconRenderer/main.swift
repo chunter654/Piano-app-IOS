@@ -32,7 +32,9 @@ struct Variant {
     let whiteKeys: Double
     /// Which white key the keyboard starts on, as a MIDI note.
     let startNote: Int
-    /// Insets as fractions of the side, before the corner mask.
+    /// Insets as fractions of the side, before the corner mask. `side` is used
+    /// for the left and right margins, and matching `bottom` to it is what
+    /// makes the band of wood round the keyboard an even width.
     let side: CGFloat
     let top: CGFloat
     let bottom: CGFloat
@@ -51,6 +53,10 @@ struct Variant {
     /// wallpaper is behind it, where the app's own case only ever has to sit
     /// under your hands in a lit room.
     let caseLift: CGFloat
+    /// How far the keybed's top corners are rounded, as a fraction of the side.
+    /// Zero leaves them square, which is what a keybed routed into a case
+    /// actually looks like: it is open at the back, not a closed panel.
+    let keybedCornerTop: CGFloat
     /// How far the keybed's bottom corners are rounded, as a fraction of the
     /// side. Zero is a square corner.
     ///
@@ -84,12 +90,57 @@ struct Variant {
 /// The mask iOS puts over every icon, as a fraction of the side.
 let maskCorner: CGFloat = 0.2237
 
+/// One inset for the sides and the bottom, so the band of wood round the
+/// keyboard is the same width on all three visible sides rather than nearly
+/// the same. It is also what the bottom corners' radius is measured from, and
+/// having one number feeding both is the point: change it and the margin and
+/// the corner stay in agreement.
+///
+/// 0.072 is between the two the icon used before, which keeps the keys as
+/// close to the size they were as an even margin allows. It also clears the
+/// mask: the arc reaches 0.065 in from the bottom edge at this inset.
+let keyboardInset: CGFloat = 0.072
+
 let icon = Variant(whiteKeys: 7, startNote: 60,
-                   side: 0.075, top: 0.30, bottom: 0.068,
+                   side: keyboardInset, top: 0.30, bottom: keyboardInset,
                    ornament: .bar(length: 0.52),
                    brassLift: 1.25, brassSpecular: true,
                    caseLift: 1.25,
-                   keybedCorner: maskCorner - 0.075, ornamentTop: 0)
+                   keybedCornerTop: 0,
+                   keybedCorner: maskCorner - keyboardInset, ornamentTop: 0)
+
+/// A rounded rectangle whose top and bottom corners can differ.
+///
+/// `UIBezierPath(roundedRect:byRoundingCorners:cornerRadii:)` takes one radius
+/// for every corner it is given, so the two ends have to be built by hand.
+func panel(_ rect: CGRect, top: CGFloat, bottom: CGFloat) -> CGPath {
+    let t = min(top, min(rect.width, rect.height) / 2)
+    let b = min(bottom, min(rect.width, rect.height) / 2)
+    let path = CGMutablePath()
+    path.move(to: CGPoint(x: rect.minX + t, y: rect.minY))
+    path.addLine(to: CGPoint(x: rect.maxX - t, y: rect.minY))
+    if t > 0 {
+        path.addArc(tangent1End: CGPoint(x: rect.maxX, y: rect.minY),
+                    tangent2End: CGPoint(x: rect.maxX, y: rect.minY + t), radius: t)
+    }
+    path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - b))
+    if b > 0 {
+        path.addArc(tangent1End: CGPoint(x: rect.maxX, y: rect.maxY),
+                    tangent2End: CGPoint(x: rect.maxX - b, y: rect.maxY), radius: b)
+    }
+    path.addLine(to: CGPoint(x: rect.minX + b, y: rect.maxY))
+    if b > 0 {
+        path.addArc(tangent1End: CGPoint(x: rect.minX, y: rect.maxY),
+                    tangent2End: CGPoint(x: rect.minX, y: rect.maxY - b), radius: b)
+    }
+    path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + t))
+    if t > 0 {
+        path.addArc(tangent1End: CGPoint(x: rect.minX, y: rect.minY),
+                    tangent2End: CGPoint(x: rect.minX + t, y: rect.minY), radius: t)
+    }
+    path.closeSubpath()
+    return path
+}
 
 /// White keys first and accidentals after, which is also the drawing order.
 func transposedFrames(_ v: Variant, keyboard: CGRect) -> [KeyFrame] {
@@ -291,26 +342,24 @@ func draw(_ v: Variant) -> UIImage {
         // hairline of keybed follows the curve and the keys do not run straight
         // into the wood.
         let radius = side * v.keybedCorner
+        let radiusTop = side * v.keybedCornerTop
         let lip = side * 0.009
         let bed = keyboard.insetBy(dx: -lip, dy: -lip)
-        let bedPath = UIBezierPath(roundedRect: bed,
-                                   byRoundingCorners: [.bottomLeft, .bottomRight],
-                                   cornerRadii: CGSize(width: radius + lip,
-                                                       height: radius + lip))
+        cg.addPath(panel(bed, top: radiusTop + lip, bottom: radius + lip))
         cg.setFillColor(Theme.keybed.cgColor)
-        bedPath.fill()
-        // The bead of light along the top edge of the routed keybed.
+        cg.fillPath()
+        // The bead of light along the top edge of the routed keybed, kept
+        // inside the top corners so it does not run out past the curve.
         cg.setFillColor(Theme.caseHighlight.cgColor)
-        cg.fill(CGRect(x: bed.minX, y: bed.minY - 3, width: bed.width, height: 3))
+        cg.fill(CGRect(x: bed.minX + radiusTop, y: bed.minY - 3,
+                       width: bed.width - radiusTop * 2, height: 3))
 
         drawOrnament(cg, v, above: keyboard)
 
         // Everything past the window belongs to the rest of the piano, which
         // the layout hands back along with the visible keys.
         cg.saveGState()
-        cg.addPath(UIBezierPath(roundedRect: keyboard,
-                                byRoundingCorners: [.bottomLeft, .bottomRight],
-                                cornerRadii: CGSize(width: radius, height: radius)).cgPath)
+        cg.addPath(panel(keyboard, top: radiusTop, bottom: radius))
         cg.clip()
 
         let frames = transposedFrames(v, keyboard: keyboard)
