@@ -36,6 +36,11 @@ struct RangeSlider: View {
     /// How far past the thumb still counts as grabbing it.
     private static let grabSlack: CGFloat = 10
 
+    /// The catch's corner radius, borrowed deliberately. Sharper corners read
+    /// as something cut to length, which is truer to a machined bar, but the
+    /// two controls matching is worth more than that precision.
+    private static let thumbCorner: CGFloat = 9
+
     var body: some View {
         GeometryReader { geo in
             let height = geo.size.height
@@ -159,7 +164,8 @@ struct RangeSlider: View {
     /// thumb without looking, and elegance that costs you the target is not
     /// elegance.
     private func thumb(width: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: Self.thumbCorner, style: .continuous)
+        return shape
             .fill(
                 LinearGradient(stops: [
                     .init(color: Theme.brassShadow, location: 0),
@@ -177,25 +183,12 @@ struct RangeSlider: View {
                     .init(color: Color.black.opacity(0.35), location: 1),
                 ], startPoint: .top, endPoint: .bottom)
             )
-            .overlay(knurl(width: width))
-            // No outline. The gradient already falls to shadow at both edges,
-            // which defines the shape without a dark ring round it: the ring is
-            // what was reading as weight, and weight is what made it look bulky.
-            .clipShape(RoundedRectangle(cornerRadius: 3.5, style: .continuous))
-            .shadow(color: Color(Theme.shadow).opacity(0.38), radius: 1.5, x: 0, y: 0.5)
-    }
-
-    /// Two fine lines turned into the middle of the bar, where a thumb sits.
-    /// Enough to say the part was machined, far short of the milled grip this
-    /// carried before, which made it the loudest thing on the screen.
-    private func knurl(width: CGFloat) -> some View {
-        VStack(spacing: 3.5) {
-            ForEach(0..<2, id: \.self) { _ in
-                Capsule()
-                    .fill(Theme.brassEdge.opacity(0.30))
-                    .frame(width: width * 0.52, height: 0.75)
-            }
-        }
+            // The same brass edge the catch wears, at the same weight. This is
+            // the detail that ties the two controls together: not the colour,
+            // which they already shared, but the line round the outside.
+            .overlay(shape.strokeBorder(Theme.capEdge, lineWidth: 0.75))
+            .clipShape(shape)
+            .shadow(color: Color(Theme.shadow).opacity(0.5), radius: 2.5, x: 0, y: 1.5)
     }
 }
 
