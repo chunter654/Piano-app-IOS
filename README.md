@@ -81,7 +81,15 @@ The app icon is rendered from those same values. `Tools/IconRenderer` compiles
 against the app's own palette, grain generator and keyboard layout code, so the
 icon cannot drift away from the instrument it stands for. It shows one octave
 pushed down the case with a bar of brass above it, which is the range slider
-laid on its side. Repaint it with any simulator booted:
+laid on its side and shortened until it reads as decoration rather than as a
+control.
+
+Two things in it are deliberately not the app's own values. The brass is a
+quarter brighter and the walnut a quarter lighter, both recorded in the
+renderer as multipliers with the reason beside them: on screen the case sits
+under your hands in a lit room, where tarnished brass and dark walnut are
+right, and the icon has to hold its own at sixty points against somebody
+else's wallpaper. Repaint it with any simulator booted:
 
 ```bash
 Tools/IconRenderer/render.sh

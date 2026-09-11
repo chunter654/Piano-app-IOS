@@ -46,6 +46,11 @@ struct Variant {
     /// A bright line along the top of the bar, where a turned edge would
     /// catch the light.
     let brassSpecular: Bool
+    /// How much to lift the walnut, as a multiplier on its brightness. One is
+    /// the case exactly as the app wears it. The icon competes with whatever
+    /// wallpaper is behind it, where the app's own case only ever has to sit
+    /// under your hands in a lit room.
+    let caseLift: CGFloat
     /// How far the keybed's bottom corners are rounded, as a fraction of the
     /// side. Zero is a square corner.
     ///
@@ -81,8 +86,9 @@ let maskCorner: CGFloat = 0.2237
 
 let icon = Variant(whiteKeys: 7, startNote: 60,
                    side: 0.075, top: 0.30, bottom: 0.068,
-                   ornament: .bar(length: 0.66),
+                   ornament: .bar(length: 0.52),
                    brassLift: 1.25, brassSpecular: true,
+                   caseLift: 1.25,
                    keybedCorner: maskCorner - 0.075, ornamentTop: 0)
 
 /// White keys first and accidentals after, which is also the drawing order.
@@ -110,14 +116,14 @@ func transposedFrames(_ v: Variant, keyboard: CGRect) -> [KeyFrame] {
 /// The case, built the way ContentView builds it: a warm gradient down the
 /// board, faint banding across it, the grain over both, a sheen where the light
 /// falls, and the outer edges darkened so the panel turns away at the sides.
-func drawCase(_ cg: CGContext) {
+func drawCase(_ cg: CGContext, _ v: Variant) {
     let full = CGRect(x: 0, y: 0, width: side, height: side)
     let space = CGColorSpaceCreateDeviceRGB()
 
     let wood = CGGradient(colorsSpace: space,
-                          colors: [Theme.woodLight.cgColor,
-                                   Theme.woodMid.cgColor,
-                                   Theme.woodDark.cgColor] as CFArray,
+                          colors: [lifted(Theme.woodLight, by: v.caseLift),
+                                   lifted(Theme.woodMid, by: v.caseLift),
+                                   lifted(Theme.woodDark, by: v.caseLift)] as CFArray,
                           locations: [0, 0.5, 1])!
     cg.drawLinearGradient(wood,
                           start: CGPoint(x: 0, y: 0),
@@ -182,6 +188,16 @@ func lifted(_ color: Color, by lift: CGFloat) -> CGColor {
     var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
     ui.getHue(&h, saturation: &s, brightness: &b, alpha: &a)
     guard lift != 1 else { return ui.cgColor }
+    return UIColor(hue: h,
+                   saturation: min(1, s * (1 + (lift - 1) * 0.6)),
+                   brightness: min(1, b * lift),
+                   alpha: a).cgColor
+}
+
+func lifted(_ color: UIColor, by lift: CGFloat) -> CGColor {
+    var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+    color.getHue(&h, saturation: &s, brightness: &b, alpha: &a)
+    guard lift != 1 else { return color.cgColor }
     return UIColor(hue: h,
                    saturation: min(1, s * (1 + (lift - 1) * 0.6)),
                    brightness: min(1, b * lift),
@@ -262,7 +278,7 @@ func draw(_ v: Variant) -> UIImage {
                                            format: format)
     return renderer.image { context in
         let cg = context.cgContext
-        drawCase(cg)
+        drawCase(cg, v)
 
         // A negative bottom margin runs the keys off the edge of the image.
         let keyboard = CGRect(x: side * v.side,
