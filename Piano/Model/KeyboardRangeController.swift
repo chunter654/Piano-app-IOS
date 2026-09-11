@@ -29,6 +29,17 @@ final class KeyboardRangeController: ObservableObject {
     static let minVisibleWhiteKeys: Double = 8
     static let maxVisibleWhiteKeys: Double = 24
 
+    /// What a first launch opens on, before anyone has chosen.
+    ///
+    /// The stacked rows, because they ask nothing of you: the phone is already
+    /// in the right hand position, the keys point the way keys point, and the
+    /// heading names the range. The single column has to be worked out first,
+    /// since nothing on screen says to turn the phone and the rotated note
+    /// names only make sense once you have. That choice is remembered from the
+    /// first tap of the catch, so anyone who prefers the column meets this
+    /// exactly once.
+    static let defaultMode: KeyboardLayoutMode = .twoRow
+
     /// Semitones the stacked arrangement shows: two whole octaves.
     static let stackedSpan = KeyboardLayout.semitonesPerOctave * 2
 
@@ -91,7 +102,7 @@ final class KeyboardRangeController: ObservableObject {
         // Held locally as well: Swift will not let the stored property be read
         // back until every property has a value.
         let resolvedMode = (defaults.string(forKey: Self.modeKey))
-            .flatMap(KeyboardLayoutMode.init(rawValue:)) ?? .single
+            .flatMap(KeyboardLayoutMode.init(rawValue:)) ?? Self.defaultMode
         mode = resolvedMode
         // `double(forKey:)` cannot tell a missing key from a stored zero, and
         // zero is a real position — A0 at the top of the screen — so the raw

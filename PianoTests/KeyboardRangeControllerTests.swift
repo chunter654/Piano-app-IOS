@@ -32,6 +32,17 @@ final class KeyboardRangeControllerTests: XCTestCase {
 
     // MARK: - Opening position
 
+    func testAFreshInstallOpensOnTheStackedRows() {
+        let range = makeController()
+        XCTAssertEqual(range.mode, KeyboardRangeController.defaultMode)
+        XCTAssertEqual(range.mode, .twoRow)
+    }
+
+    func testASavedArrangementBeatsTheDefault() {
+        defaults.set(KeyboardLayoutMode.single.rawValue, forKey: "keyboard.layoutMode")
+        XCTAssertEqual(makeController().mode, .single)
+    }
+
     func testAFreshInstallOpensOnC3ToC5() {
         let range = makeController()
         XCTAssertEqual(range.position, 16, accuracy: 0.0001)

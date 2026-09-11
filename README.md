@@ -14,6 +14,11 @@ in the project, the store name is a field in App Store Connect.
 A brass catch at the top right switches between them, and the choice is
 remembered.
 
+A first launch opens on the stacked rows. They ask nothing of a new user: the
+phone is already in the right position and the heading names the range, where
+the single column has to be worked out first. Since the choice is remembered,
+anyone who prefers the column meets that default once.
+
 **Single column.** The instrument is turned a quarter turn clockwise. Pitch
 runs down the screen, the key fronts face left, and the accidentals reach in
 from the right. The note names turn with it, so tilting the phone reads them
@@ -89,7 +94,7 @@ xcodebuild -project Piano.xcodeproj -scheme Piano \
   -destination 'platform=iOS Simulator,name=iPhone 16 Pro' test
 ```
 
-There are 40 of them, covering the layout maths, the range controller, the zoom
+There are 42 of them, covering the layout maths, the range controller, the zoom
 limits, and note naming. They are pure model tests with no UI, so they are quick.
 
 ### Running on a real iPhone
