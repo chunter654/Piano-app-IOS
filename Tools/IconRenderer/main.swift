@@ -46,6 +46,15 @@ struct Variant {
     /// A bright line along the top of the bar, where a turned edge would
     /// catch the light.
     let brassSpecular: Bool
+    /// How far the keybed's bottom corners are rounded, as a fraction of the
+    /// side. Zero is a square corner.
+    ///
+    /// The interesting value is the one concentric with the icon's own mask:
+    /// the mask's radius less the keyboard's inset, which makes the bottom of
+    /// the keyboard run parallel to the corner of the icon instead of cutting
+    /// across it. Concentric corners are why a keyboard set inside a frame
+    /// looks nested rather than pasted on.
+    let keybedCorner: CGFloat
     /// The top of the band the brass is centred in, as a fraction of the side.
     /// Zero centres the brass between the keyboard and the top edge of the
     /// image. A larger value centres it in the case you can actually see,
@@ -67,10 +76,14 @@ struct Variant {
 // The window has to end on a white key with no accidental above it, or the
 // last black key is sliced in half by the edge of the keyboard. A full octave
 // from C does. Most other counts do not.
+/// The mask iOS puts over every icon, as a fraction of the side.
+let maskCorner: CGFloat = 0.2237
+
 let icon = Variant(whiteKeys: 7, startNote: 60,
                    side: 0.075, top: 0.30, bottom: 0.068,
                    ornament: .bar(length: 0.66),
-                   brassLift: 1.25, brassSpecular: true, ornamentTop: 0)
+                   brassLift: 1.25, brassSpecular: true,
+                   keybedCorner: maskCorner - 0.075, ornamentTop: 0)
 
 /// White keys first and accidentals after, which is also the drawing order.
 func transposedFrames(_ v: Variant, keyboard: CGRect) -> [KeyFrame] {
@@ -257,10 +270,19 @@ func draw(_ v: Variant) -> UIImage {
                               width: side * (1 - v.side * 2),
                               height: side * (1 - v.top - v.bottom))
 
-        // The keybed the keys sit in, which shows as the seam between them.
-        let bed = keyboard.insetBy(dx: -side * 0.009, dy: -side * 0.009)
+        // The keybed the keys sit in, which shows as the seam between them. Its
+        // corners are rounded a little more than the keys are clipped to, so a
+        // hairline of keybed follows the curve and the keys do not run straight
+        // into the wood.
+        let radius = side * v.keybedCorner
+        let lip = side * 0.009
+        let bed = keyboard.insetBy(dx: -lip, dy: -lip)
+        let bedPath = UIBezierPath(roundedRect: bed,
+                                   byRoundingCorners: [.bottomLeft, .bottomRight],
+                                   cornerRadii: CGSize(width: radius + lip,
+                                                       height: radius + lip))
         cg.setFillColor(Theme.keybed.cgColor)
-        cg.fill(bed)
+        bedPath.fill()
         // The bead of light along the top edge of the routed keybed.
         cg.setFillColor(Theme.caseHighlight.cgColor)
         cg.fill(CGRect(x: bed.minX, y: bed.minY - 3, width: bed.width, height: 3))
@@ -270,7 +292,10 @@ func draw(_ v: Variant) -> UIImage {
         // Everything past the window belongs to the rest of the piano, which
         // the layout hands back along with the visible keys.
         cg.saveGState()
-        cg.clip(to: keyboard)
+        cg.addPath(UIBezierPath(roundedRect: keyboard,
+                                byRoundingCorners: [.bottomLeft, .bottomRight],
+                                cornerRadii: CGSize(width: radius, height: radius)).cgPath)
+        cg.clip()
 
         let frames = transposedFrames(v, keyboard: keyboard)
             .filter { $0.frame.intersects(keyboard) }
@@ -286,12 +311,12 @@ func draw(_ v: Variant) -> UIImage {
             // block at the size the icon is actually seen.
             let seam = key.isBlack ? 0 : key.frame.width * 0.022
             let body = key.frame.insetBy(dx: seam, dy: 0)
-            let radius = key.isBlack ? body.width * 0.18 : body.width * 0.14
+            let keyRadius = key.isBlack ? body.width * 0.18 : body.width * 0.14
             // Only the front corners are rounded; the back of a key is square
             // against the keybed.
             let path = UIBezierPath(roundedRect: body,
                                     byRoundingCorners: [.bottomLeft, .bottomRight],
-                                    cornerRadii: CGSize(width: radius, height: radius))
+                                    cornerRadii: CGSize(width: keyRadius, height: keyRadius))
             cg.saveGState()
             cg.setShadow(offset: CGSize(width: 0, height: key.isBlack ? 14 : 5),
                          blur: key.isBlack ? 22 : 10,
@@ -312,7 +337,7 @@ func draw(_ v: Variant) -> UIImage {
 
             // The hairline along the lit front edge.
             let bevel = key.isBlack ? Theme.accidentalBevel : Theme.naturalBevel
-            let inset = radius * 0.7
+            let inset = keyRadius * 0.7
             cg.setFillColor(bevel.cgColor)
             cg.fill(CGRect(x: body.minX + inset,
                            y: body.maxY - 5,

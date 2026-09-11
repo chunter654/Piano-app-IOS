@@ -92,6 +92,12 @@ about 0.2237 of the side, and at the keyboard's own inset that arc reaches
 0.065 of the side in from the bottom edge, so anything closer loses the corners
 of the outer keys.
 
+That same radius sets the keybed's bottom corners. Theirs is the mask's radius
+less the keyboard's inset, which makes the two curves concentric: the band of
+wood between the keybed and the edge of the icon keeps its width all the way
+round the corner, and the keyboard reads as set into the case rather than laid
+on top of it.
+
 ## Building
 
 Requires Xcode and an iOS 17 device or simulator.
