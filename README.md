@@ -147,6 +147,11 @@ that lives only in a web form is one nobody can check. `Tools/check-listing.sh`
 measures every field against Apple's limits and fails if the credit goes
 missing.
 
+The listing is deliberately short. It is the promise, the two views, and the
+credit, and nothing else: someone paying for a piano app wants a piano, not a
+feature list. Keeping the text in the repo makes that brevity a decision rather
+than an oversight.
+
 The app is priced at $1.99 with nothing to buy inside it.
 
 ## Distributing it

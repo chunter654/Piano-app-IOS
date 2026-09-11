@@ -8,6 +8,8 @@ import re, sys
 text = open("StoreListing.md").read()
 limits = {"Name": 30, "Subtitle": 30, "Promotional text": 170,
           "Keywords": 100, "Description": 4000}
+# Promotional text is optional, and this listing does without it.
+required = {"Name", "Subtitle", "Keywords", "Description"}
 sections = re.split(r"^## ", text, flags=re.M)[1:]
 seen, bad = {}, False
 for s in sections:
@@ -30,7 +32,7 @@ if credit not in text:
     bad = True
 else:
     print("ok  attribution present")
-missing = set(limits) - set(seen)
+missing = required - set(seen)
 if missing:
     print("MISSING sections:", ", ".join(sorted(missing)))
     bad = True
