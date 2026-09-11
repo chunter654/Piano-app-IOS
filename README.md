@@ -75,9 +75,20 @@ seeded random source so it is identical on every launch, the keys are aged
 ivory and a dark warm brown rather than white and black, and the lettering is
 New York, the system serif, which means no font file ships with the app.
 
-The app icon is rendered from those same values. Its renderer compiles against
-the app's own palette, grain generator, and keyboard layout code, so the icon
-cannot drift away from the instrument it stands for.
+The app icon is rendered from those same values. `Tools/IconRenderer` compiles
+against the app's own palette, grain generator and keyboard layout code, so the
+icon cannot drift away from the instrument it stands for. It shows one octave
+pushed down the case with a bar of brass above it, which is the range slider
+laid on its side. Repaint it with any simulator booted:
+
+```bash
+Tools/IconRenderer/render.sh
+```
+
+The margins in it are not arbitrary. iOS masks an icon with a corner radius of
+about 0.2237 of the side, and at the keyboard's own inset that arc reaches
+0.065 of the side in from the bottom edge, so anything closer loses the corners
+of the outer keys.
 
 ## Building
 
@@ -127,6 +138,16 @@ and no knowledge of touches or sound. `KeyboardRangeController` owns both
 position models, converts between them when the arrangement changes, and
 persists them under `keyboard.viewportPosition`, `keyboard.layoutMode`, and
 `keyboard.startNote`.
+
+## The store listing
+
+`StoreListing.md` holds the text of the App Store listing, because the sound's
+licence obliges us to credit it wherever the app is distributed and a credit
+that lives only in a web form is one nobody can check. `Tools/check-listing.sh`
+measures every field against Apple's limits and fails if the credit goes
+missing.
+
+The app is priced at $1.99 with nothing to buy inside it.
 
 ## Distributing it
 
