@@ -12,7 +12,10 @@ in the project, the store name is a field in App Store Connect.
 ## The two arrangements
 
 A brass catch at the top right switches between them, and the choice is
-remembered.
+remembered. It sits in exactly the same place in both arrangements, which is a
+property of one shared constant rather than of two numbers that happen to
+agree: the plate is centred in whatever width it is given, so a wider column
+would set it further from the edge and make it hop sideways on every toggle.
 
 A first launch opens on the single column. It was the stacked rows for a
 while, on the argument that they ask nothing of a newcomer, and that argument

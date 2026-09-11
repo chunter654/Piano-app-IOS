@@ -99,7 +99,10 @@ struct ContentView: View {
     /// column, and Apple puts the smallest comfortable target at 44 points.
     /// Below about 30 they become genuinely fiddly to hit, particularly the
     /// catch, which is a single small tap rather than a drag you can correct.
-    private static let controlColumnWidth: CGFloat = 36
+    ///
+    /// The catch owns this number, because the stacked bar has to place it at
+    /// the same distance from the edge as this column does.
+    private static let controlColumnWidth: CGFloat = LayoutCatch.railWidth
     private static let controlColumnGap: CGFloat = 7
 
     private var singleColumn: some View {

@@ -18,6 +18,19 @@ struct LayoutCatch: View {
     let width: CGFloat
     let action: () -> Void
 
+    /// The width of the column the catch is placed in, in both arrangements.
+    ///
+    /// One number, used by the single column's control rail and by the stacked
+    /// bar, because the catch is meant to be in the same place on the screen
+    /// either way: the plate is centred in whatever width it is given, so two
+    /// different widths put it two different distances from the edge, and
+    /// switching arrangement made it hop sideways by half their difference.
+    ///
+    /// It is below Apple's 44 point target, which the single column has always
+    /// traded away to give the keys the width instead. The frame is 48 tall, so
+    /// the target is 36 by 48 rather than 36 square.
+    static let railWidth: CGFloat = 36
+
     private static let plateWidth: CGFloat = 30
     private static let plateHeight: CGFloat = 38
 

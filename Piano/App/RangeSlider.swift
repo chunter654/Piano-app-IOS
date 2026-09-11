@@ -209,7 +209,12 @@ struct RangeStepBar: View {
 
     /// The catch, and the empty space reserved opposite it. One constant for
     /// both, because the pair being equal is what centres the range.
-    private static let catchWidth: CGFloat = 44
+    ///
+    /// It is the catch's own width rather than a number chosen here: the plate
+    /// is centred in whatever width it is given, so anything wider than the
+    /// single column's rail would set the catch further from the edge and make
+    /// it jump sideways when the arrangement changes.
+    private static let catchWidth: CGFloat = LayoutCatch.railWidth
 
     /// What the range has to fit within: the channel plus the stack's spacing
     /// on either side of it.
