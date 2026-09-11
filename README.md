@@ -101,14 +101,28 @@ about 0.2237 of the side, and at the keyboard's own inset that arc reaches
 of the outer keys.
 
 One inset does the sides and the bottom, so that band of wood is the same
-width on all three visible sides. It also sets the keybed's bottom corners:
-their radius is the mask's radius less that inset, which makes the two curves
-concentric, so the band keeps its width all the way round the corner and the
-keyboard reads as set into the case rather than laid on top of it. One number
-feeds the margin and the corner, and changing it keeps them in agreement.
+width on all three visible sides.
+
+The keybed's own outline is that same inset applied to the mask itself rather
+than a rounded rectangle. It is built by walking the mask's curve and stepping
+inwards along the normal at every point, which is the only shape whose
+distance from the mask is constant. A rounded rectangle is not: a circular
+corner against the mask's curve opened the band from 82 pixels at the sides to
+126 through the corner, and even a superellipse of the same radius opens it by
+about a fifth on the diagonal.
+
+Two things follow from that. The band of wood keeps its width all the way
+round, so the keyboard reads as set into the case rather than laid on top of
+it. And the curve arrives at the straight edges with its curvature run down to
+nothing, where a circular arc meets them with a step the eye reads as a
+crease.
 
 The top corners stay square. A keybed routed into a case is open at the back,
 not a closed panel.
+
+The mask is a superellipse, not a circular rounded rectangle, and
+`Tools/IconPreview` exists because getting that wrong in a preview hides
+exactly this defect.
 
 ## Building
 

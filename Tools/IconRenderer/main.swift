@@ -53,19 +53,6 @@ struct Variant {
     /// wallpaper is behind it, where the app's own case only ever has to sit
     /// under your hands in a lit room.
     let caseLift: CGFloat
-    /// How far the keybed's top corners are rounded, as a fraction of the side.
-    /// Zero leaves them square, which is what a keybed routed into a case
-    /// actually looks like: it is open at the back, not a closed panel.
-    let keybedCornerTop: CGFloat
-    /// How far the keybed's bottom corners are rounded, as a fraction of the
-    /// side. Zero is a square corner.
-    ///
-    /// The interesting value is the one concentric with the icon's own mask:
-    /// the mask's radius less the keyboard's inset, which makes the bottom of
-    /// the keyboard run parallel to the corner of the icon instead of cutting
-    /// across it. Concentric corners are why a keyboard set inside a frame
-    /// looks nested rather than pasted on.
-    let keybedCorner: CGFloat
     /// The top of the band the brass is centred in, as a fraction of the side.
     /// Zero centres the brass between the keyboard and the top edge of the
     /// image. A larger value centres it in the case you can actually see,
@@ -106,38 +93,83 @@ let icon = Variant(whiteKeys: 7, startNote: 60,
                    ornament: .bar(length: 0.52),
                    brassLift: 1.25, brassSpecular: true,
                    caseLift: 1.25,
-                   keybedCornerTop: 0,
-                   keybedCorner: maskCorner - keyboardInset, ornamentTop: 0)
+                   ornamentTop: 0)
 
-/// A rounded rectangle whose top and bottom corners can differ.
+/// How square the corner curve is. Five is close to the curve iOS uses to mask
+/// an icon, which is not a circular arc.
+let cornerSquareness: CGFloat = 5
+
+/// One quarter of the icon mask, sampled.
 ///
-/// `UIBezierPath(roundedRect:byRoundingCorners:cornerRadii:)` takes one radius
-/// for every corner it is given, so the two ends have to be built by hand.
-func panel(_ rect: CGRect, top: CGFloat, bottom: CGFloat) -> CGPath {
-    let t = min(top, min(rect.width, rect.height) / 2)
-    let b = min(bottom, min(rect.width, rect.height) / 2)
+/// `ax` and `ay` say which way the quarter's two ends lie from its centre.
+func maskCornerPoints(centre: CGPoint, radius: CGFloat,
+                      ax: CGPoint, ay: CGPoint, steps: Int) -> [CGPoint] {
+    (0...steps).map { step in
+        let angle = CGFloat(step) / CGFloat(steps) * .pi / 2
+        let u = pow(cos(angle), 2 / cornerSquareness)
+        let v = pow(sin(angle), 2 / cornerSquareness)
+        return CGPoint(x: centre.x + (ax.x * u + ay.x * v) * radius,
+                       y: centre.y + (ax.y * u + ay.y * v) * radius)
+    }
+}
+
+/// The keybed, as a path a fixed distance inside the icon's own mask.
+///
+/// Not a rounded rectangle. Two curves of the same radius but different
+/// families diverge in the middle of a corner, and even two superellipses
+/// sharing a centre do: the gap between them opens by about a quarter on the
+/// diagonal. The only shape whose distance from the mask is the same
+/// everywhere is the mask's own offset curve, so that is what this builds,
+/// by walking the mask and stepping inwards along the normal at every point.
+///
+/// The cost is that the corner is no longer describable as a radius. The gain
+/// is that the band of wood round the keyboard is the same width at the sides,
+/// at the bottom, and through the corners, which is what the eye is actually
+/// measuring.
+func keybedPath(inset d: CGFloat, top: CGFloat) -> CGPath {
+    let radius = side * maskCorner
+    let steps = 256
     let path = CGMutablePath()
-    path.move(to: CGPoint(x: rect.minX + t, y: rect.minY))
-    path.addLine(to: CGPoint(x: rect.maxX - t, y: rect.minY))
-    if t > 0 {
-        path.addArc(tangent1End: CGPoint(x: rect.maxX, y: rect.minY),
-                    tangent2End: CGPoint(x: rect.maxX, y: rect.minY + t), radius: t)
+
+    /// Steps a sampled curve inwards along its own normal.
+    func offset(_ points: [CGPoint], towards centre: CGPoint) -> [CGPoint] {
+        points.enumerated().map { index, point in
+            let before = points[max(0, index - 1)]
+            let after = points[min(points.count - 1, index + 1)]
+            var nx = -(after.y - before.y)
+            var ny = after.x - before.x
+            let length = max(sqrt(nx * nx + ny * ny), 0.000001)
+            nx /= length
+            ny /= length
+            // Two normals at every point; take the one facing the centre.
+            if (centre.x - point.x) * nx + (centre.y - point.y) * ny < 0 {
+                nx = -nx
+                ny = -ny
+            }
+            return CGPoint(x: point.x + nx * d, y: point.y + ny * d)
+        }
     }
-    path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - b))
-    if b > 0 {
-        path.addArc(tangent1End: CGPoint(x: rect.maxX, y: rect.maxY),
-                    tangent2End: CGPoint(x: rect.maxX - b, y: rect.maxY), radius: b)
+
+    let rightCentre = CGPoint(x: side - radius, y: side - radius)
+    let leftCentre = CGPoint(x: radius, y: side - radius)
+
+    path.move(to: CGPoint(x: d, y: top))
+    path.addLine(to: CGPoint(x: side - d, y: top))
+    path.addLine(to: CGPoint(x: side - d, y: side - radius))
+    for point in offset(maskCornerPoints(centre: rightCentre, radius: radius,
+                                         ax: CGPoint(x: 1, y: 0),
+                                         ay: CGPoint(x: 0, y: 1), steps: steps),
+                        towards: rightCentre) {
+        path.addLine(to: point)
     }
-    path.addLine(to: CGPoint(x: rect.minX + b, y: rect.maxY))
-    if b > 0 {
-        path.addArc(tangent1End: CGPoint(x: rect.minX, y: rect.maxY),
-                    tangent2End: CGPoint(x: rect.minX, y: rect.maxY - b), radius: b)
+    path.addLine(to: CGPoint(x: radius, y: side - d))
+    for point in offset(maskCornerPoints(centre: leftCentre, radius: radius,
+                                         ax: CGPoint(x: 0, y: 1),
+                                         ay: CGPoint(x: -1, y: 0), steps: steps),
+                        towards: leftCentre) {
+        path.addLine(to: point)
     }
-    path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + t))
-    if t > 0 {
-        path.addArc(tangent1End: CGPoint(x: rect.minX, y: rect.minY),
-                    tangent2End: CGPoint(x: rect.minX + t, y: rect.minY), radius: t)
-    }
+    path.addLine(to: CGPoint(x: d, y: top))
     path.closeSubpath()
     return path
 }
@@ -341,25 +373,24 @@ func draw(_ v: Variant) -> UIImage {
         // corners are rounded a little more than the keys are clipped to, so a
         // hairline of keybed follows the curve and the keys do not run straight
         // into the wood.
-        let radius = side * v.keybedCorner
-        let radiusTop = side * v.keybedCornerTop
+        // The keybed sits a hairline outside where the keys are clipped, so a
+        // line of it follows the curve and no key runs straight into the wood.
         let lip = side * 0.009
-        let bed = keyboard.insetBy(dx: -lip, dy: -lip)
-        cg.addPath(panel(bed, top: radiusTop + lip, bottom: radius + lip))
+        let bed = keybedPath(inset: side * v.side - lip, top: keyboard.minY - lip)
+        cg.addPath(bed)
         cg.setFillColor(Theme.keybed.cgColor)
         cg.fillPath()
-        // The bead of light along the top edge of the routed keybed, kept
-        // inside the top corners so it does not run out past the curve.
+        // The bead of light along the top edge of the routed keybed.
         cg.setFillColor(Theme.caseHighlight.cgColor)
-        cg.fill(CGRect(x: bed.minX + radiusTop, y: bed.minY - 3,
-                       width: bed.width - radiusTop * 2, height: 3))
+        cg.fill(CGRect(x: side * v.side - lip, y: keyboard.minY - lip - 3,
+                       width: side * (1 - v.side * 2) + lip * 2, height: 3))
 
         drawOrnament(cg, v, above: keyboard)
 
         // Everything past the window belongs to the rest of the piano, which
         // the layout hands back along with the visible keys.
         cg.saveGState()
-        cg.addPath(panel(keyboard, top: radiusTop, bottom: radius))
+        cg.addPath(keybedPath(inset: side * v.side, top: keyboard.minY))
         cg.clip()
 
         let frames = transposedFrames(v, keyboard: keyboard)
@@ -375,7 +406,19 @@ func draw(_ v: Variant) -> UIImage {
             // a 1024 icon disappears, and the naturals then read as one cream
             // block at the size the icon is actually seen.
             let seam = key.isBlack ? 0 : key.frame.width * 0.022
-            let body = key.frame.insetBy(dx: seam, dy: 0)
+            // A seam belongs between two keys. The outer edge of the first and
+            // last key has no neighbour, and carrying one there put the cream
+            // further in at the sides than at the bottom, which is visible as
+            // an uneven band even though the keybed behind it is even.
+            var body = key.frame.insetBy(dx: seam, dy: 0)
+            if key.frame.minX - keyboard.minX < 1 {
+                body = CGRect(x: keyboard.minX, y: body.minY,
+                              width: body.maxX - keyboard.minX, height: body.height)
+            }
+            if keyboard.maxX - key.frame.maxX < 1 {
+                body = CGRect(x: body.minX, y: body.minY,
+                              width: keyboard.maxX - body.minX, height: body.height)
+            }
             let keyRadius = key.isBlack ? body.width * 0.18 : body.width * 0.14
             // Only the front corners are rounded; the back of a key is square
             // against the keybed.
